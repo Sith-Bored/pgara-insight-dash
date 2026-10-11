@@ -11,6 +11,7 @@ from pgara.allocate import (
     allocate_potential_game,
     allocate_profile_greedy,
     allocate_static_greedy,
+    physical_registers,
 )
 from pgara.cfg import CFG, build_cfg
 from pgara.costs import (
@@ -30,6 +31,7 @@ class SkippedAllocation:
     algorithm: str
     skip_reason: str
     notes: list[str]
+    physical_registers: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -95,7 +97,12 @@ def analyze(
             if not allow_skip:
                 raise InputError(PROFILES_REQUIRED)
             result.results.append(
-                SkippedAllocation(algorithm, PROFILES_REQUIRED, [PROFILES_REQUIRED])
+                SkippedAllocation(
+                    algorithm,
+                    PROFILES_REQUIRED,
+                    [PROFILES_REQUIRED],
+                    physical_registers(num_registers),
+                )
             )
             result.timings_ms[algorithm] = 0.0
             continue
