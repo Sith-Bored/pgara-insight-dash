@@ -1,80 +1,8 @@
 # Pgara Insight Dash
 
-Build a polished, interactive research dashboard for a Computer Science compiler-design project called **PGARA — Profile-Guided Adaptive Register Allocation**.
+Interactive research dashboard for **PGARA — Profile-Guided Adaptive Register Allocation**, a compiler-design project.
 
-This is an academic compiler visualization tool, not a generic SaaS dashboard and not just a landing page.
-
-### Visual design
-
-Create a professional dark developer interface inspired by compiler tooling, IDEs, and scientific visualization. Use a near-black background, restrained blue and violet accents, subtle borders, compact typography, and clean data visualizations. Avoid excessive gradients, glowing effects, oversized headings, and unnecessary animations.
-
-The application should look credible in a university professor demonstration.
-
-### Main layout
-
-Create a persistent sidebar with:
-- Overview
-- Program Editor
-- Allocation Lab
-- Interference Graph
-- Benchmark Comparison
-- Algorithm Trace
-
-The main overview should contain:
-- A concise project description.
-- Register allocation configuration.
-- A sample three-address-code program.
-- An execution profile panel.
-- An algorithm comparison area.
-- A results and decision-trace section.
-
-### Program Editor
-
-Provide a code editor-like input area for a small three-address intermediate representation. Include a Load Sample Program button and editable sample code with labeled basic blocks, assignments, arithmetic, conditional branches, and return statements.
-
-### Configuration controls
-
-Allow the user to configure:
-- Number of available physical registers.
-- Execution-frequency profile.
-- Allocation algorithms to compare.
-- The multi-profile robustness parameter.
-
-Provide a button labeled Run Allocation Experiment.
-
-### Allocation results
-
-Design sections for:
-- Virtual register to physical register assignments.
-- Spilled live ranges.
-- Estimated dynamic spill operations.
-- Allocation execution time.
-- Interference graph.
-- Profile-by-profile cost.
-- Game-inspired allocation decision trace.
-
-Use tables, charts, and a graph visualization where appropriate. Show clear labels and units.
-
-### Comparison algorithms
-
-Provide three options:
-1. Static Greedy
-2. Profile-Weighted Greedy
-3. Multi-Profile Potential Game
-
-### Technical implementation requirements
-
-Use React, TypeScript, Tailwind CSS, and reusable components.
-
-Create a separate typed API service module so the application can later connect to a Python FastAPI backend. Keep the visualization components separate from the data-fetching logic.
-
-For the first UI iteration, use a clearly identified sample dataset only to demonstrate the layout. Do not present sample metrics as real benchmark results. Make it straightforward to replace sample data with actual API responses.
-
-Add loading states, empty states, validation errors, and backend connection error handling.
-
-Do not add authentication, a database, Supabase, or unrelated product features. This is an academic single-user research prototype.
-
-Create the complete initial frontend, make the principal navigation and controls interactive, and ensure the layout works on a laptop screen. The next stage will connect it to our real compiler-analysis backend.
+The Lovable frontend lives at the repository root. The milestone-1 compiler analysis backend lives in `backend/`. API details are in [docs/API.md](docs/API.md) and the IR syntax is in [docs/IR.md](docs/IR.md).
 
 This project was built with [Lovable](https://lovable.dev).
 
@@ -86,7 +14,7 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 - **Stay in sync**: every change made in Lovable is committed straight to this repository.
 - **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
-## Development
+## Frontend
 
 Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
@@ -96,3 +24,44 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Backend
+
+The analyzer parses a small three-address IR, builds a control-flow graph, runs iterative liveness and interference, and allocates registers with static greedy, profile-weighted greedy, and a potential-game search. Spill figures are estimates from execution counts you supply. They are not measured runtime. The game search stops at a local equilibrium or the iteration budget. It does not claim global optimality.
+
+From the `backend` directory, with Python 3.11 or newer.
+
+### Windows PowerShell
+
+```powershell
+cd backend
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m pytest
+python -m uvicorn pgara.api:app --host 127.0.0.1 --port 8741
+```
+
+If activation is blocked for the current process only:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+```
+
+`py -3` is the usual Windows launcher. If it is not installed, use `python` in place of `py -3` for the `venv` line.
+
+### bash
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m pytest
+python -m uvicorn pgara.api:app --host 127.0.0.1 --port 8741
+```
+
+Then open [http://127.0.0.1:8741/docs](http://127.0.0.1:8741/docs). CORS allows `http://localhost` and `http://127.0.0.1` on any port. Credentials are not enabled.
+
+Point the dashboard at `http://127.0.0.1:8741`, or proxy `/api` to that address. `GET /api/sample-program` returns a program and profiles. In assignment maps, `null` means spilled.
