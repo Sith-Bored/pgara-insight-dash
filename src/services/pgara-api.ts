@@ -8,7 +8,7 @@ const resultSchema = z.object({
   trace:z.array(z.object({step:z.number(),action:z.string(),detail:z.string(),potential:z.number(),status:z.string()})),
 });
 export interface ApiSettings { mode: 'sample' | 'backend'; baseUrl: string }
-export const defaultApiSettings: ApiSettings = { mode:'sample', baseUrl: import.meta.env.VITE_PGARA_API_URL || 'http://localhost:8000' };
+export const defaultApiSettings: ApiSettings = { mode:'sample', baseUrl: import.meta.env['VITE_PGARA_API_URL'] || 'http://localhost:8000' };
 export async function runExperiment(request: ExperimentRequest, settings: ApiSettings): Promise<ExperimentResult> {
   if (settings.mode === 'sample') { await new Promise(resolve => setTimeout(resolve, 850)); return getSampleResult(request); }
   let url: URL;
