@@ -10,33 +10,102 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AlgorithmTraceRouteImport } from './routes/algorithm-trace'
+import { Route as AllocationLabRouteImport } from './routes/allocation-lab'
+import { Route as BenchmarkComparisonRouteImport } from './routes/benchmark-comparison'
+import { Route as InterferenceGraphRouteImport } from './routes/interference-graph'
+import { Route as ProgramEditorRouteImport } from './routes/program-editor'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlgorithmTraceRoute = AlgorithmTraceRouteImport.update({
+  id: '/algorithm-trace',
+  path: '/algorithm-trace',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AllocationLabRoute = AllocationLabRouteImport.update({
+  id: '/allocation-lab',
+  path: '/allocation-lab',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BenchmarkComparisonRoute = BenchmarkComparisonRouteImport.update({
+  id: '/benchmark-comparison',
+  path: '/benchmark-comparison',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InterferenceGraphRoute = InterferenceGraphRouteImport.update({
+  id: '/interference-graph',
+  path: '/interference-graph',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgramEditorRoute = ProgramEditorRouteImport.update({
+  id: '/program-editor',
+  path: '/program-editor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/algorithm-trace': typeof AlgorithmTraceRoute
+  '/allocation-lab': typeof AllocationLabRoute
+  '/benchmark-comparison': typeof BenchmarkComparisonRoute
+  '/interference-graph': typeof InterferenceGraphRoute
+  '/program-editor': typeof ProgramEditorRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/algorithm-trace': typeof AlgorithmTraceRoute
+  '/allocation-lab': typeof AllocationLabRoute
+  '/benchmark-comparison': typeof BenchmarkComparisonRoute
+  '/interference-graph': typeof InterferenceGraphRoute
+  '/program-editor': typeof ProgramEditorRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/algorithm-trace': typeof AlgorithmTraceRoute
+  '/allocation-lab': typeof AllocationLabRoute
+  '/benchmark-comparison': typeof BenchmarkComparisonRoute
+  '/interference-graph': typeof InterferenceGraphRoute
+  '/program-editor': typeof ProgramEditorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/algorithm-trace'
+    | '/allocation-lab'
+    | '/benchmark-comparison'
+    | '/interference-graph'
+    | '/program-editor'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/algorithm-trace'
+    | '/allocation-lab'
+    | '/benchmark-comparison'
+    | '/interference-graph'
+    | '/program-editor'
+  id:
+    | '__root__'
+    | '/'
+    | '/algorithm-trace'
+    | '/allocation-lab'
+    | '/benchmark-comparison'
+    | '/interference-graph'
+    | '/program-editor'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AlgorithmTraceRoute: typeof AlgorithmTraceRoute
+  AllocationLabRoute: typeof AllocationLabRoute
+  BenchmarkComparisonRoute: typeof BenchmarkComparisonRoute
+  InterferenceGraphRoute: typeof InterferenceGraphRoute
+  ProgramEditorRoute: typeof ProgramEditorRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +117,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/algorithm-trace': {
+      id: '/algorithm-trace'
+      path: '/algorithm-trace'
+      fullPath: '/algorithm-trace'
+      preLoaderRoute: typeof AlgorithmTraceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/allocation-lab': {
+      id: '/allocation-lab'
+      path: '/allocation-lab'
+      fullPath: '/allocation-lab'
+      preLoaderRoute: typeof AllocationLabRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/benchmark-comparison': {
+      id: '/benchmark-comparison'
+      path: '/benchmark-comparison'
+      fullPath: '/benchmark-comparison'
+      preLoaderRoute: typeof BenchmarkComparisonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/interference-graph': {
+      id: '/interference-graph'
+      path: '/interference-graph'
+      fullPath: '/interference-graph'
+      preLoaderRoute: typeof InterferenceGraphRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/program-editor': {
+      id: '/program-editor'
+      path: '/program-editor'
+      fullPath: '/program-editor'
+      preLoaderRoute: typeof ProgramEditorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlgorithmTraceRoute: AlgorithmTraceRoute,
+  AllocationLabRoute: AllocationLabRoute,
+  BenchmarkComparisonRoute: BenchmarkComparisonRoute,
+  InterferenceGraphRoute: InterferenceGraphRoute,
+  ProgramEditorRoute: ProgramEditorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
