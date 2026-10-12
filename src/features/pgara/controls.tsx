@@ -34,7 +34,7 @@ export function ProgramEditor({large=false}:{large?:boolean}) {
     <div className="code-footer"><span>TAC · UTF-8</span><span>{s.program.split('\n').length} lines · {blocks.length} blocks</span></div>
   </Panel>;
 }
-const dashboardPaths = ['Entry', 'Hot path', 'Cold path', 'Exit'];
+const dashboardPaths: Record<string, string> = { B0: 'Entry', B1: 'Hot path', B2: 'Cold path', B3: 'Exit' };
 export function ExecutionProfiles({editable=false}:{editable?:boolean}) {
   const s=useExperiment(); const [active,setActive]=useState(0);
   const labels = blockLabels(s.program);
@@ -42,12 +42,12 @@ export function ExecutionProfiles({editable=false}:{editable?:boolean}) {
   const profile = s.profiles[index];
   if (!profile) return null;
   const rows = labels.length ? labels : profile.frequencies.map((_, i) => `B${i}`);
-  const namedPaths = rows.length === 4 && rows.every((label, i) => label === `B${i}`);
+  const namedPaths = rows.every(label => label in dashboardPaths);
   const max = Math.max(1, ...profile.frequencies.filter((count): count is number => typeof count === 'number'));
   return <Panel title="Execution profile" icon={<ChartNoAxesColumnIncreasing/>} action={<span className="badge">{s.profiles.length} profiles</span>}>
     <div className="profile-tabs">{s.profiles.map((p,i)=><Button variant="ghost" key={`${p.name}-${i}`} className={i===index?'active':''} onClick={()=>setActive(i)}>{p.name}</Button>)}</div>
     {labels.length === 0 && <div className="empty-state">Add a `block name:` header to attach an execution count to each basic block.</div>}
-    {labels.length > 0 && <div className="table-scroll"><table className="data-table"><thead><tr><th>Basic block</th><th>Path</th><th className="numeric">Executions</th><th>Frequency</th></tr></thead><tbody>{rows.map((label,i)=>{const count=profile.frequencies[i]; const shown=typeof count==='number'?count.toLocaleString():'—'; return <tr key={label}><td className="font-mono text-primary">{label}</td><td className="text-muted-foreground">{namedPaths ? dashboardPaths[i] : '—'}</td><td className="numeric">{editable?<input aria-label={`${profile.name} ${label} executions`} className="number-input w-24" type="number" min="0" value={count ?? ''} disabled={s.loading} onChange={e=>{const next=Number(e.target.value); s.update(s.setProfiles,s.profiles.map((p,j)=>j!==index?p:{...p,frequencies:rows.map((_,k)=>k===i?next:p.frequencies[k])}));}}/>:shown}</td><td><div className="profile-bar"><progress value={typeof count==='number'?count:0} max={max}/></div></td></tr>;})}</tbody></table></div>}
+    {labels.length > 0 && <div className="table-scroll"><table className="data-table"><thead><tr><th>Basic block</th><th>Path</th><th className="numeric">Executions</th><th>Frequency</th></tr></thead><tbody>{rows.map((label,i)=>{const count=profile.frequencies[i]; const shown=typeof count==='number'?count.toLocaleString():'—'; return <tr key={label}><td className="font-mono text-primary">{label}</td><td className="text-muted-foreground">{namedPaths ? dashboardPaths[label] : '—'}</td><td className="numeric">{editable?<input aria-label={`${profile.name} ${label} executions`} className="number-input w-24" type="number" min="0" value={count ?? ''} disabled={s.loading} onChange={e=>{const next=Number(e.target.value); s.update(s.setProfiles,s.profiles.map((p,j)=>j!==index?p:{...p,frequencies:rows.map((_,k)=>k===i?next:p.frequencies[k])}));}}/>:shown}</td><td><div className="profile-bar"><progress value={typeof count==='number'?count:0} max={max}/></div></td></tr>;})}</tbody></table></div>}
     <div className="chart-foot"><span>Explicit block execution counts · one per basic block</span><span className="font-mono">{rows.length} blocks</span></div>
   </Panel>;
 }

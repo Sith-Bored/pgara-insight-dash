@@ -17,15 +17,14 @@ export const sampleProgram = `block B0:
   t2 = c * d
   t3 = t1 + t2
   if t3 goto B1
-  goto B2
+
+block B2:
+  t5 = t2 - t1
+  goto B3
 
 block B1:
   t4 = t3 * 2
   t5 = t4 + t1
-  goto B3
-
-block B2:
-  t5 = t2 - t1
   goto B3
 
 block B3:
@@ -33,9 +32,9 @@ block B3:
   return t6
 `;
 export const initialProfiles: Profile[] = [
-  { name: 'Hot loop', frequencies: [1000, 850, 150, 1000] },
+  { name: 'Hot loop', frequencies: [1000, 150, 850, 1000] },
   { name: 'Balanced', frequencies: [1000, 500, 500, 1000] },
-  { name: 'Cold-heavy', frequencies: [1000, 200, 800, 1000] },
+  { name: 'Cold-heavy', frequencies: [1000, 800, 200, 1000] },
 ];
 export function validateExperiment(request: ExperimentRequest): string[] {
   const errors: string[] = [];
