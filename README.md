@@ -25,6 +25,37 @@ npm i
 npm run dev
 ```
 
+The dashboard starts in sample mode. Those numbers are a fixed illustration. They do not change when you edit the program, and they are not measurements.
+
+To call the analyzer, start the backend (below) and switch **Connection settings** to the FastAPI backend. The default URL is `http://127.0.0.1:8741`. Override it with `VITE_PGARA_API_URL` (see `.env.example`). Changing the register count, program, profiles, algorithms, or tradeoff does not call the API. **Run Allocation Experiment** sends `POST /api/allocate`, then `POST /api/benchmark`.
+
+`GET /api/health` updates the connection status. **Load sample** in backend mode reads `GET /api/sample-program` into the editor and does not allocate until you run.
+
+The request uses the register count, the program text, one execution count per basic block, the selected algorithms, and the robustness slider as `tradeoff`. The potential game starts from `all_spilled` with iteration budget 200. Spill figures in backend mode are estimates. The synthetic suite on the benchmark page is a set of allocator runs on built-in programs, not measured application runtime.
+
+### Windows PowerShell
+
+Use two terminals.
+
+```powershell
+# Terminal 1 — analyzer
+cd backend
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m pytest
+python -m uvicorn pgara.api:app --host 127.0.0.1 --port 8741
+```
+
+```powershell
+# Terminal 2 — dashboard
+Copy-Item .env.example .env
+npm install
+npm run dev
+```
+
+Open the URL Vite prints. In the dashboard, open Connection settings, choose FastAPI backend, check the connection, apply, then run an experiment.
+
 ## Backend
 
 The analyzer parses a small three-address IR, builds a control-flow graph, runs iterative liveness and interference, and allocates registers with static greedy, profile-weighted greedy, and a potential-game search. Spill figures are estimates from execution counts you supply. They are not measured runtime. The game search stops at a local equilibrium or the iteration budget. It does not claim global optimality.
