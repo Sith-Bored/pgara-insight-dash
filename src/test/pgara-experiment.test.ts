@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { algorithms, initialProfiles, sampleProgram, validateExperiment } from '@/features/pgara/types';
 import { getSampleResult } from '@/features/pgara/sample-data';
 import { runExperiment } from '@/services/pgara-api';
-import { toBackendSource } from '@/services/pgara-backend';
+import { toBackendSource, toUiAlgorithm } from '@/services/pgara-backend';
 const request = {program:sampleProgram,registers:4,profiles:initialProfiles,algorithms:algorithms.map(a=>a.id),robustness:0.6};
 afterEach(()=>vi.unstubAllGlobals());
 describe('PGARA experiment rules',()=>{
@@ -74,6 +74,28 @@ describe('PGARA experiment rules',()=>{
     expect(result.graph.edges).toEqual([['t1','t2']]);
     expect(result.trace).toEqual([]);
   });
+  it('normalizes API algorithm ids onto the dashboard ids',()=>{
+    expect(toUiAlgorithm('potential_game')).toBe('game');
+    expect(toUiAlgorithm('profile_greedy')).toBe('weighted');
+    expect(toUiAlgorithm('static_greedy')).toBe('static');
+    expect(toUiAlgorithm('game')).toBe('game');
+    expect(toUiAlgorithm('unknown')).toBeNull();
+  });
+  it('keeps each algorithm result and the potential-game trace distinct',async()=>{
+    const fetchMock=vi.fn().mockResolvedValue({ok:true,json:async()=>distinctFixture});
+    vi.stubGlobal('fetch',fetchMock);
+    const result=await runExperiment(request,{mode:'backend',baseUrl:'http://127.0.0.1:8741'});
+    const body=JSON.parse((fetchMock.mock.calls[0] as [string,{body:string}])[1].body) as {algorithm:string};
+    expect(body.algorithm).toBe('all');
+    expect(result.source).toBe('backend');
+    expect(result.results.map(row=>row.algorithm)).toEqual(['static','weighted','game']);
+    expect(result.results.map(row=>row.assignments.find(item=>item.virtual==='a')?.physical)).toEqual(['p0','p0',null]);
+    expect(result.results.map(row=>row.spills)).toEqual([['b'],['b'],['a']]);
+    expect(result.results.map(row=>row.dynamicSpillOps)).toEqual([19,19,20]);
+    expect(result.results.map(row=>row.executionMs)).toEqual([0.11,0.08,0.2]);
+    expect(result.trace.map(step=>step.action)).toContain('Move b from spill to p0');
+    expect(result.traceStatus).toBe('no_improving_move');
+  });
 });
 
 function liveRange(id: string) {
@@ -88,6 +110,30 @@ function liveRange(id: string) {
     uses: [{ block: 'B3', index: 1, kind: 'load' }],
   };
 }
+function algorithmOut(algorithm: string, assignments: Record<string, string | null>, spills: string[], spillOps: number, ms: number, trace: unknown[] = []) {
+  return {
+    algorithm, status: 'ok', assignments, spills,
+    per_profile_costs: [{ profile: 'skew', estimated_spill_operations: spillOps }],
+    static_spill_operations: spillOps, execution_time_ms: ms, iterations: trace.length,
+    stopping_reason: algorithm === 'potential_game' ? 'no_improving_move' : 'single_pass',
+    potential_numerator: spillOps, potential_denominator: 1, potential_float: spillOps,
+    decision_trace: trace, valid: true,
+  };
+}
+const distinctFixture = {
+  api_version: '1.0',
+  blocks: [{ label: 'def_a' }, { label: 'exit' }],
+  interference: { nodes: ['a', 'b'], edges: [{ a: 'a', b: 'b' }] },
+  live_ranges: ['a', 'b'].map(id => ({ ...liveRange(id), defs: [{ block: 'def_a', index: 0, kind: 'store' }], uses: [{ block: 'exit', index: 0, kind: 'load' }] })),
+  results: [
+    algorithmOut('static_greedy', { a: 'p0', b: null }, ['b'], 19, 0.11),
+    algorithmOut('profile_greedy', { a: 'p0', b: null }, ['b'], 19, 0.08),
+    algorithmOut('potential_game', { a: null, b: 'p0' }, ['a'], 20, 0.2, [{
+      step: 0, live_range: 'b', action: 'move', previous_strategy: 'spill', strategy: 'p0',
+      new_potential_numerator: 10, new_potential_denominator: 1, reason: 'accepted a strictly lower potential',
+    }]),
+  ],
+};
 const allocateFixture = {
   api_version: '1.0',
   blocks: [{ label: 'B0' }, { label: 'B1' }, { label: 'B2' }, { label: 'B3' }],
