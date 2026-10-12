@@ -16,6 +16,13 @@ const apiAlgorithm = {
   game: 'potential_game',
 } as const satisfies Record<AlgorithmId, string>;
 
+/** Accept the dashboard id (`game`) or the API id (`potential_game`). */
+export function toUiAlgorithm(value: string): AlgorithmId | null {
+  if (value in apiAlgorithm) return value as AlgorithmId;
+  if (value in uiAlgorithm) return uiAlgorithm[value as keyof typeof uiAlgorithm];
+  return null;
+}
+
 const profileCostSchema = z.object({
   profile: z.string(),
   estimated_spill_operations: z.number(),

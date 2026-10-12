@@ -8,6 +8,7 @@ import {
   benchmarkResponseSchema,
   healthResponseSchema,
   mapAllocateResponse,
+  toUiAlgorithm,
   mapBenchmarkResponse,
   mapSampleProgram,
   readBackendError,
@@ -39,7 +40,7 @@ export async function runExperiment(request: ExperimentRequest, settings: ApiSet
     if (!first) throw new Error('The backend did not return an allocation.');
     const merged: AllocateResponse = { ...first, results: parts.flatMap(part => part.results) };
     const mapped = mapAllocateResponse(merged, request.algorithms);
-    const ordered = request.algorithms.map(id => mapped.results.find(result => result.algorithm === id));
+    const ordered = request.algorithms.map(id => mapped.results.find(result => toUiAlgorithm(result.algorithm) === id));
     if (ordered.some(result => !result)) throw new Error('The backend did not return every requested algorithm.');
     return { ...mapped, results: ordered.filter((result): result is ExperimentResult['results'][number] => Boolean(result)) };
   } catch (error) {
