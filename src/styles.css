@@ -141,6 +141,8 @@
 .data-table { width:100%; border-collapse:collapse; font-size:11px; }
 .data-table th { text-align:left; color:var(--muted-foreground); font-size:9px; font-weight:400; background:color-mix(in oklch,var(--background) 50%,var(--card)); padding:10px 16px; white-space:nowrap; }
 .data-table td { padding:10px 16px; border-top:1px solid var(--border); white-space:nowrap; }
+.data-table td.benchmark-case { white-space:normal; min-width:16rem; max-width:28rem; }
+.data-table td.benchmark-case small { display:block; margin-top:4px; color:var(--muted-foreground); font-size:10px; line-height:1.4; }
 .data-table .numeric { text-align:right; font-family:var(--font-mono); }
 .profile-bar { width:80px; height:4px; background:var(--muted); border-radius:2px; overflow:hidden; }
 .profile-bar progress { appearance:none; width:100%; height:4px; display:block; }

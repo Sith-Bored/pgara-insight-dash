@@ -108,7 +108,7 @@ function useExperimentState() {
     if (settings.mode !== 'backend') return;
     setBenchmarkLoading(true);
     try {
-      setBenchmark(await runBenchmark(settings.baseUrl, request.robustness));
+      setBenchmark(await runBenchmark(settings.baseUrl));
       setBenchmarkError(null);
     } catch (error) {
       setBenchmark(null);
