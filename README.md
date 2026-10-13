@@ -31,7 +31,7 @@ To call the analyzer, start the backend (below) and switch **Connection settings
 
 `GET /api/health` updates the connection status. **Load sample** in backend mode reads `GET /api/sample-program` into the editor and does not allocate until you run.
 
-The request uses the register count, the program text, one execution count per basic block, the selected algorithms, and the robustness slider as `tradeoff`. The potential game starts from `all_spilled` with iteration budget 200. Spill figures in backend mode are estimates. The synthetic suite on the benchmark page is a set of allocator runs on built-in programs, not measured application runtime.
+The allocation request uses the register count, the program text, one execution count per basic block, the selected algorithms, and the robustness slider as `tradeoff`. The potential game starts from `all_spilled` with iteration budget 200. Spill figures in backend mode are estimates. The synthetic suite posts an empty body to `POST /api/benchmark`, so each built-in case keeps its own tradeoff and iteration budget. Those runs are allocator results on built-in programs, not measured application runtime.
 
 ### Windows PowerShell
 

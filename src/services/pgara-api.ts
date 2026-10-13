@@ -52,14 +52,14 @@ export async function runExperiment(request: ExperimentRequest, settings: ApiSet
   }
 }
 
-export async function runBenchmark(baseUrl: string, tradeoff: number): Promise<BenchmarkSuite> {
+export async function runBenchmark(baseUrl: string): Promise<BenchmarkSuite> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
     const response = await fetch(apiUrl(baseUrl, '/api/benchmark'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tradeoff }),
+      body: JSON.stringify({}),
       signal: controller.signal,
     });
     if (!response.ok) throw new Error(await readBackendError(response));
