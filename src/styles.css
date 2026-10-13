@@ -150,7 +150,8 @@ progress::-moz-progress-bar { background:var(--primary); }
 .table-scroll { overflow:auto; }
 .comparison-legend { display:flex; flex-wrap:wrap; gap:13px; font-size:9px; color:var(--muted-foreground); }
 .comparison-legend span { display:flex; align-items:center; gap:5px; }
-.chart { height:200px; width:100%; min-width:0; }
+.chart { height:200px; width:100%; min-width:0; position:relative; }
+.chart-zero-note { position:absolute; left:36px; right:8px; top:38%; z-index:1; margin:0; text-align:center; font-size:12px; line-height:1.4; color:var(--foreground); pointer-events:none; }
 .chart text { font-family:var(--font-mono); font-size:9px; fill:var(--muted-foreground); }
 .chart-grid { stroke:var(--border); }
 .recharts-tooltip-wrapper { font-size:11px; }

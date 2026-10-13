@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, LabelList } from 'recharts';
 import { ChartNoAxesColumnIncreasing, Network, ListTree, Table2, Check, Loader2, FlaskConical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { algorithms, type AlgorithmId, type AlgorithmResult } from './types';
@@ -11,12 +11,27 @@ function selectedResult(results: AlgorithmResult[] | undefined, selected: Algori
 }
 export function ResultEmpty() { const s=useExperiment(); return <div className="empty-state" role="status">{s.loading?<Loader2 className="loading-spin"/>:<FlaskConical/>}<div className="text-foreground mb-2">{s.loading?'Running allocation experiment':'No allocation results'}</div><div>{s.loading?'Waiting for the experiment response…':'Run an experiment to populate this view.'}</div></div>; }
 function ChartTooltip({active,payload,label}:{active?:boolean;payload?:Array<{name?:string;value?:number|string}>;label?:string|number}) { if(!active||!payload?.length) return null; return <div className="chart-tooltip"><div className="text-foreground mb-2">{label}</div>{payload.map((p,i)=><div key={i} className="text-muted-foreground">{p.name}: {Number(p.value).toLocaleString()} spill ops</div>)}</div>; }
+/** Zero stays zero. A degenerate 0–0 axis is given a tick at 0 so the baseline remains visible. */
+export function spillChartScale(values: number[]) {
+  const allZero = values.length > 0 && values.every(value => value === 0);
+  return allZero
+    ? { allZero: true, domain: [0, 1] as [number, number], ticks: [0] }
+    : { allZero: false, domain: [0, 'dataMax'] as [number, 'dataMax'], ticks: undefined };
+}
+function spillLabel(value: unknown) {
+  return typeof value === 'number' ? value.toLocaleString() : '';
+}
 export function ComparisonChart({byProfile=false}:{byProfile?:boolean}) {
   const s=useExperiment();
   const rows=s.result?.results.flatMap(r=>{const algorithm=toUiAlgorithm(r.algorithm); return algorithm?[{name:algorithms.find(a=>a.id===algorithm)?.short ?? algorithm,spillOps:r.dynamicSpillOps,algorithm}]:[];})??[];
   const profiles=s.result?.results[0]?.profileCosts.map((p,i)=>({name:p.profile,...Object.fromEntries((s.result?.results??[]).flatMap(r=>{const algorithm=toUiAlgorithm(r.algorithm); return algorithm?[[algorithm,r.profileCosts[i]?.spillOps??0]]:[]}))}))??[];
+  const shown=algorithms.filter(a=>s.result?.results.some(r=>toUiAlgorithm(r.algorithm)===a.id));
+  const values=byProfile
+    ? profiles.flatMap(row=>shown.flatMap(a=>{const value=(row as Record<string, string | number>)[a.id]; return typeof value==='number'?[value]:[];}))
+    : rows.map(row=>row.spillOps);
+  const scale=spillChartScale(values);
   return <Panel title={byProfile?'Profile-by-profile spill cost':'Algorithm comparison'} icon={<ChartNoAxesColumnIncreasing/>} action={<span className="badge">Dynamic spill operations</span>}>
-    {s.result?<><div className="panel-body"><div className="comparison-legend mb-4">{algorithms.filter(a=>s.result?.results.some(r=>toUiAlgorithm(r.algorithm)===a.id)).map(a=><span key={a.id}><i className={`algo-dot ${a.color}`}/>{a.short}</span>)}</div><div className="chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={byProfile?profiles:rows} margin={{top:7,right:8,left:-14,bottom:0}} barCategoryGap={byProfile?'25%':'28%'}><CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 4"/><XAxis dataKey="name" axisLine={false} tickLine={false} tickMargin={12}/><YAxis axisLine={false} tickLine={false} tickFormatter={v=>v>=1000?`${v/1000}k`:String(v)}/><Tooltip cursor={{fill:'var(--muted)'}} content={<ChartTooltip/>}/>{byProfile?algorithms.filter(a=>s.result?.results.some(r=>toUiAlgorithm(r.algorithm)===a.id)).map(a=><Bar key={a.id} dataKey={a.id} name={a.short} fill={`var(--${a.color})`} radius={[3,3,0,0]}/>):algorithms.filter(a=>s.result?.results.some(r=>toUiAlgorithm(r.algorithm)===a.id)).map(a=><Bar key={a.id} dataKey={row=>row.algorithm===a.id?row.spillOps:null} name={a.short} fill={`var(--${a.color})`} radius={[3,3,0,0]} stackId="algorithms"/>)}</BarChart></ResponsiveContainer></div></div><div className="chart-foot"><span>{s.result.source==='sample'?'Illustrative fixture · k = 4 · λ = 0.60':'Sum of estimated spill operations across the supplied profiles'}</span><span>{s.result.source==='sample'?'Not a measured benchmark':'Not measured runtime'}</span></div></>:<ResultEmpty/>}
+    {s.result?<><div className="panel-body"><div className="comparison-legend mb-4">{shown.map(a=>{const cost=rows.find(row=>row.algorithm===a.id)?.spillOps; return <span key={a.id}><i className={`algo-dot ${a.color}`}/>{a.short}{!byProfile && cost!==undefined && <span className="font-mono">{cost.toLocaleString()}</span>}</span>;})}</div><div className="chart">{scale.allZero && <p className="chart-zero-note" role="status">No estimated spills for this configuration.</p>}<ResponsiveContainer width="100%" height="100%"><BarChart data={byProfile?profiles:rows} margin={{top:16,right:8,left:-14,bottom:0}} barCategoryGap={byProfile?'25%':'28%'}><CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 4"/><XAxis dataKey="name" axisLine={false} tickLine={false} tickMargin={12}/><YAxis axisLine={false} tickLine={false} domain={scale.domain} {...(scale.ticks ? { ticks: scale.ticks } : {})} allowDecimals={false} tickFormatter={v=>v>=1000?`${v/1000}k`:String(v)}/><Tooltip cursor={{fill:'var(--muted)'}} content={<ChartTooltip/>}/>{byProfile?shown.map(a=><Bar key={a.id} dataKey={a.id} name={a.short} fill={`var(--${a.color})`} radius={[3,3,0,0]}><LabelList position="top" formatter={spillLabel}/></Bar>):shown.map(a=><Bar key={a.id} dataKey={row=>row.algorithm===a.id?row.spillOps:null} name={a.short} fill={`var(--${a.color})`} radius={[3,3,0,0]} stackId="algorithms"><LabelList position="top" formatter={spillLabel}/></Bar>)}</BarChart></ResponsiveContainer></div></div><div className="chart-foot"><span>{s.result.source==='sample'?'Illustrative fixture · k = 4 · λ = 0.60':'Sum of estimated spill operations across the supplied profiles'}{scale.allZero && s.result.source==='backend'?' · returned zeros, not missing data':''}</span><span>{s.result.source==='sample'?'Not a measured benchmark':'Not measured runtime'}</span></div></>:<ResultEmpty/>}
   </Panel>;
 }
 export function Assignments() {
