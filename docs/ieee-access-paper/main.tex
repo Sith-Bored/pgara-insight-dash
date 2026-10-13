@@ -9,7 +9,30 @@
 \usepackage{booktabs}
 \usepackage{array}
 \graphicspath{{figures/}}
+% The class selects font series n (its Formata/Times convention). TeX Live
+% and Overleaf define Times, Helvetica, and Courier in series m only.
+% Alias series n onto those shapes so italic and typewriter resolve.
 \makeatletter
+\input{t1ptm.fd}
+\input{t1phv.fd}
+\input{t1pcr.fd}
+\DeclareFontShape{T1}{ptm}{n}{n}{<->ssub * ptm/m/n}{}
+\DeclareFontShape{T1}{ptm}{n}{it}{<->ssub * ptm/m/it}{}
+\DeclareFontShape{T1}{ptm}{n}{sl}{<->ssub * ptm/m/sl}{}
+\DeclareFontShape{T1}{ptm}{n}{sc}{<->ssub * ptm/m/sc}{}
+\DeclareFontShape{T1}{phv}{n}{n}{<->ssub * phv/m/n}{}
+\DeclareFontShape{T1}{phv}{n}{it}{<->ssub * phv/m/it}{}
+\DeclareFontShape{T1}{phv}{n}{sl}{<->ssub * phv/m/sl}{}
+\DeclareFontShape{T1}{pcr}{n}{n}{<->ssub * pcr/m/n}{}
+\DeclareFontShape{T1}{pcr}{n}{it}{<->ssub * pcr/m/it}{}
+\DeclareFontShape{T1}{pcr}{n}{sl}{<->ssub * pcr/m/sl}{}
+% \abstractwidth was \let to \titlewidth, so the class shrinks both.
+% Give the abstract its own register and restore the title measure.
+\newlength\ieeeabstractwidth
+\addtolength\titlewidth{2.39mm}
+\let\abstractwidth\ieeeabstractwidth
+\setlength\abstractwidth{\titlewidth}
+\addtolength\abstractwidth{-3.3mm}
 \@ifundefined{c@biography}{\newcounter{biography}}{}
 \@ifundefined{if@biographyTOCentrynotmade}{%
   \newif\if@biographyTOCentrynotmade
@@ -89,7 +112,7 @@ A single spill weight hides disagreement among profiles.
 A search that moves only one live range cannot swap two ranges in one step, even when the swap would look better.
 Learned allocators require a training corpus and a full compiler backend \cite{silva2024,venkatakeerthy2022}, which this repository does not include.
 
-The implemented technique is therefore a small, inspectable pipeline.
+The implemented technique is therefore a small pipeline that can be inspected.
 After parsing and validation, the analyzer builds a control-flow graph, computes may-liveness, and adds an interference edge wherever two virtual registers are simultaneously live.
 Spill sites are the live uses and the live definitions of each range.
 Static greedy orders ranges by a profile-independent site count.
@@ -185,7 +208,7 @@ A related paper uses a dependency-aware interference graph for voltage scaling \
 Both objectives differ from PGARA's estimated spill operations.
 A timing-error rate cannot be read as a PGARA cost.
 
-Chen, Liu, and Liu studied register allocation for application-specific processors in 5G micro-baseband kernels \cite{chen2022}.
+Chen, Liu, and Liu studied allocation for application-specific processors in 5G micro-baseband kernels \cite{chen2022}.
 The method exploits known, fixed data sizes and parallel data access rather than a general profile set.
 The retrieved abstract does not report PGARA's metrics.
 The gap is the program model: PGARA accepts a textual three-address language with explicit block counts, not a baseband kernel schedule.
@@ -306,7 +329,13 @@ Profile-weighted greedy and the potential search require at least one profile.
 Requesting either algorithm alone without a profile is an input error.
 Requesting all three algorithms without a profile runs static greedy and marks the other two as skipped.
 
-The dashboard maps the service names \texttt{static\_greedy}, \texttt{profile\_greedy}, and \texttt{potential\_game} to the labels Static greedy, Profile-weighted, and Potential game.
+The dashboard maps each service identifier to a display label.
+
+\texttt{static\_greedy} is shown as Static greedy.
+
+\texttt{profile\_greedy} is shown as Profile-weighted.
+
+\texttt{potential\_game} is shown as Potential game.
 The assignment view has its own algorithm menu.
 The comparison chart does not read that menu.
 It plots each returned result's own sum.
@@ -605,12 +634,12 @@ The service is started with
 The numbers in Section~\ref{sec:observed} were obtained by calling the same \texttt{analyze} function the service calls.
 Load cost and store cost were 1.
 The potential search started from the all-spilled assignment.
-They are stored in \texttt{verified-results.json} next to this manuscript.
+The estimates are stored beside this manuscript in \texttt{verified-\allowbreak results.json}.
 Re-running that call on version 0.1.0 reproduces the estimates.
 It will not reproduce wall-clock time, which was deliberately not saved as a result.
 
 The dashboard sample program has blocks \texttt{B0}, \texttt{B2}, \texttt{B1}, and \texttt{B3} in that source order, so the false edge of the branch in \texttt{B0} enters \texttt{B2}.
-Its three profiles, in source order, are Hot loop $(1000,150,850,1000)$, Balanced $(1000,500,500,1000)$, and Cold-heavy $(1000,800,200,1000)$.
+Its three profiles, in source order, are Hot loop (1000, 150, 850, 1000), Balanced (1000, 500, 500, 1000), and Cold-heavy (1000, 800, 200, 1000).
 The allocation tradeoff used for that program in the tables is $3/5$, the rational image of the dashboard's default robustness $0.6$.
 The built-in suite does not use that tradeoff.
 Each case uses the fraction stored in the suite.
@@ -837,8 +866,12 @@ Profiles are trusted as given.
 Allocator time is recorded and was not evaluated as a performance metric.
 
 Realistic next work stays inside those gaps.
-A repeated timing protocol on a stated machine would make \texttt{execution\_time\_ms} meaningful.
-A spill-code rewrite would allow a comparison of emitted loads and stores, which is the quantity Burroughs measured and PGARA does not.
+
+A repeated timing protocol on a stated machine would make the recorded allocator time meaningful.
+That field is \texttt{execution\_time\_ms}.
+A spill-code rewrite would allow a comparison of emitted loads and stores.
+Burroughs measured that quantity.
+PGARA does not emit those instructions.
 Live-range splitting would use the identifier field the data structures already keep.
 A study on programs other than the eight synthetic cases would show whether the $\lambda = 1$ choice is common or an example.
 Until those measurements exist, the supported claim is narrow: given this cost model and these inputs, the three procedures return the assignments and estimates reported above.
@@ -863,7 +896,8 @@ Competing interests were not supplied.
 No conflict is asserted or denied on behalf of an unnamed author.
 
 \section*{Data and Code Availability}
-The analyzer, tests, dashboard, and the result file \texttt{verified-results.json} used in Section~\ref{sec:results} are part of the project that contains this manuscript.
+The analyzer, the tests, the dashboard, and \texttt{verified-\allowbreak results.json} are part of the project that contains this manuscript.
+Section~\ref{sec:results} uses that result file.
 The estimates can be recomputed from analyzer version 0.1.0 by the procedure in Section~\ref{sec:setup}.
 A public archive, a DOI for the code, and a data-availability statement approved by the authors were not supplied.
 No external benchmark suite was downloaded for this draft.
