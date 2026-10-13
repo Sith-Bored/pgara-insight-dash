@@ -1,0 +1,1257 @@
+{
+  "version": "0.1.0",
+  "python": "3.12.3",
+  "note": "Each case was allocated by executing the analyzers on a deterministic synthetic program. execution_time_ms is allocator time on this machine, not a measured spill penalty. per_profile_costs are estimated spill operations from the case's supplied block execution counts, not measured runtime. The potential-game results are local equilibria of unilateral moves, or budget cutoffs, and are not claimed to be globally optimal.",
+  "dashboard": [
+    {
+      "k": 2,
+      "nodes": 10,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [
+            "c",
+            "d",
+            "t2",
+            "t4"
+          ],
+          "assigned": 6,
+          "static_spill_operations": 7,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 5850
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 5500
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 5200
+            }
+          ],
+          "sum": 16550,
+          "valid_stopping": "single_pass",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": null,
+            "d": null,
+            "t1": "p0",
+            "t2": null,
+            "t3": "p1",
+            "t4": null,
+            "t5": "p0",
+            "t6": "p0"
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [
+            "c",
+            "d",
+            "t2",
+            "t4"
+          ],
+          "assigned": 6,
+          "static_spill_operations": 7,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 5850
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 5500
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 5200
+            }
+          ],
+          "sum": 16550,
+          "valid_stopping": "single_pass",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": null,
+            "d": null,
+            "t1": "p1",
+            "t2": null,
+            "t3": "p0",
+            "t4": null,
+            "t5": "p1",
+            "t6": "p0"
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [
+            "c",
+            "d",
+            "t2",
+            "t4"
+          ],
+          "assigned": 6,
+          "static_spill_operations": 7,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 5850
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 5500
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 5200
+            }
+          ],
+          "sum": 16550,
+          "valid_stopping": "no_improving_move",
+          "iterations": 6,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": null,
+            "d": null,
+            "t1": "p1",
+            "t2": null,
+            "t3": "p0",
+            "t4": null,
+            "t5": "p1",
+            "t6": "p0"
+          }
+        }
+      ]
+    },
+    {
+      "k": 3,
+      "nodes": 10,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [
+            "d"
+          ],
+          "assigned": 9,
+          "static_spill_operations": 1,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 1000
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 1000
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 1000
+            }
+          ],
+          "sum": 3000,
+          "valid_stopping": "single_pass",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": null,
+            "t1": "p0",
+            "t2": "p2",
+            "t3": "p1",
+            "t4": "p2",
+            "t5": "p0",
+            "t6": "p0"
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [
+            "d"
+          ],
+          "assigned": 9,
+          "static_spill_operations": 1,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 1000
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 1000
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 1000
+            }
+          ],
+          "sum": 3000,
+          "valid_stopping": "single_pass",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": null,
+            "t1": "p1",
+            "t2": "p2",
+            "t3": "p0",
+            "t4": "p2",
+            "t5": "p1",
+            "t6": "p0"
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [
+            "d"
+          ],
+          "assigned": 9,
+          "static_spill_operations": 1,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 1000
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 1000
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 1000
+            }
+          ],
+          "sum": 3000,
+          "valid_stopping": "no_improving_move",
+          "iterations": 9,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": null,
+            "t1": "p1",
+            "t2": "p2",
+            "t3": "p0",
+            "t4": "p2",
+            "t5": "p1",
+            "t6": "p0"
+          }
+        }
+      ]
+    },
+    {
+      "k": 4,
+      "nodes": 10,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [],
+          "assigned": 10,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "single_pass",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": "p3",
+            "t1": "p0",
+            "t2": "p2",
+            "t3": "p1",
+            "t4": "p2",
+            "t5": "p0",
+            "t6": "p0"
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [],
+          "assigned": 10,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "single_pass",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": "p3",
+            "t1": "p1",
+            "t2": "p2",
+            "t3": "p0",
+            "t4": "p2",
+            "t5": "p1",
+            "t6": "p0"
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [],
+          "assigned": 10,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "no_improving_move",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": "p3",
+            "t1": "p1",
+            "t2": "p2",
+            "t3": "p0",
+            "t4": "p2",
+            "t5": "p1",
+            "t6": "p0"
+          }
+        }
+      ]
+    },
+    {
+      "k": 5,
+      "nodes": 10,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [],
+          "assigned": 10,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "single_pass",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": "p3",
+            "t1": "p0",
+            "t2": "p2",
+            "t3": "p1",
+            "t4": "p2",
+            "t5": "p0",
+            "t6": "p0"
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [],
+          "assigned": 10,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "single_pass",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": "p3",
+            "t1": "p1",
+            "t2": "p2",
+            "t3": "p0",
+            "t4": "p2",
+            "t5": "p1",
+            "t6": "p0"
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [],
+          "assigned": 10,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "no_improving_move",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": "p3",
+            "t1": "p1",
+            "t2": "p2",
+            "t3": "p0",
+            "t4": "p2",
+            "t5": "p1",
+            "t6": "p0"
+          }
+        }
+      ]
+    },
+    {
+      "k": 6,
+      "nodes": 10,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [],
+          "assigned": 10,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "single_pass",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": "p3",
+            "t1": "p0",
+            "t2": "p2",
+            "t3": "p1",
+            "t4": "p2",
+            "t5": "p0",
+            "t6": "p0"
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [],
+          "assigned": 10,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "single_pass",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": "p3",
+            "t1": "p1",
+            "t2": "p2",
+            "t3": "p0",
+            "t4": "p2",
+            "t5": "p1",
+            "t6": "p0"
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [],
+          "assigned": 10,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "Hot loop",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Balanced",
+              "estimated_spill_operations": 0
+            },
+            {
+              "profile": "Cold-heavy",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "no_improving_move",
+          "iterations": 10,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p1",
+            "c": "p2",
+            "d": "p3",
+            "t1": "p1",
+            "t2": "p2",
+            "t3": "p0",
+            "t4": "p2",
+            "t5": "p1",
+            "t6": "p0"
+          }
+        }
+      ]
+    }
+  ],
+  "benchmark": [
+    {
+      "name": "sequential_reuse",
+      "description": "Three non-interfering ranges in one block. One physical register can be reused by all of them.",
+      "k": 1,
+      "tradeoff": "1/2",
+      "budget": 10,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [],
+          "assigned": 3,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "single_pass",
+          "iterations": 3,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p0",
+            "c": "p0"
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [],
+          "assigned": 3,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "single_pass",
+          "iterations": 3,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p0",
+            "c": "p0"
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [],
+          "assigned": 3,
+          "static_spill_operations": 0,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 0,
+          "valid_stopping": "no_improving_move",
+          "iterations": 3,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": "p0",
+            "c": "p0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "diamond",
+      "description": "A conditional branch with two paths that join.",
+      "k": 1,
+      "tradeoff": "1/2",
+      "budget": 20,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [
+            "b"
+          ],
+          "assigned": 2,
+          "static_spill_operations": 3,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 3
+            }
+          ],
+          "sum": 3,
+          "valid_stopping": "single_pass",
+          "iterations": 3,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": "p0"
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [
+            "b"
+          ],
+          "assigned": 2,
+          "static_spill_operations": 3,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 3
+            }
+          ],
+          "sum": 3,
+          "valid_stopping": "single_pass",
+          "iterations": 3,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": "p0"
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [
+            "b"
+          ],
+          "assigned": 2,
+          "static_spill_operations": 3,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 3
+            }
+          ],
+          "sum": 3,
+          "valid_stopping": "no_improving_move",
+          "iterations": 2,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": "p0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "loop",
+      "description": "A loop whose header and body need iterative liveness.",
+      "k": 1,
+      "tradeoff": "1/2",
+      "budget": 20,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [
+            "s"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 4,
+          "per_profile": [
+            {
+              "profile": "ten",
+              "estimated_spill_operations": 40
+            }
+          ],
+          "sum": 40,
+          "valid_stopping": "single_pass",
+          "iterations": 2,
+          "execution_time_ms": null,
+          "assignments": {
+            "i": "p0",
+            "s": null
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [
+            "s"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 4,
+          "per_profile": [
+            {
+              "profile": "ten",
+              "estimated_spill_operations": 40
+            }
+          ],
+          "sum": 40,
+          "valid_stopping": "single_pass",
+          "iterations": 2,
+          "execution_time_ms": null,
+          "assignments": {
+            "i": "p0",
+            "s": null
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [
+            "s"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 4,
+          "per_profile": [
+            {
+              "profile": "ten",
+              "estimated_spill_operations": 40
+            }
+          ],
+          "sum": 40,
+          "valid_stopping": "no_improving_move",
+          "iterations": 1,
+          "execution_time_ms": null,
+          "assignments": {
+            "i": "p0",
+            "s": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "profile_versus_static",
+      "description": "One physical register. Static spill counts prefer a; the supplied hot-block counts prefer b.",
+      "k": 1,
+      "tradeoff": "0",
+      "budget": 10,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [
+            "b"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 2,
+          "per_profile": [
+            {
+              "profile": "hot_b",
+              "estimated_spill_operations": 101
+            }
+          ],
+          "sum": 101,
+          "valid_stopping": "single_pass",
+          "iterations": 2,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [
+            "a"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 8,
+          "per_profile": [
+            {
+              "profile": "hot_b",
+              "estimated_spill_operations": 8
+            }
+          ],
+          "sum": 8,
+          "valid_stopping": "single_pass",
+          "iterations": 2,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": null,
+            "b": "p0"
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [
+            "a"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 8,
+          "per_profile": [
+            {
+              "profile": "hot_b",
+              "estimated_spill_operations": 8
+            }
+          ],
+          "sum": 8,
+          "valid_stopping": "no_improving_move",
+          "iterations": 1,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": null,
+            "b": "p0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "game_average",
+      "description": "Two profiles and tradeoff 0. From all-spilled, the game's first strict improvement keeps a, the higher average-cost range.",
+      "k": 1,
+      "tradeoff": "0",
+      "budget": 10,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [
+            "b"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 2,
+          "per_profile": [
+            {
+              "profile": "skew",
+              "estimated_spill_operations": 19
+            },
+            {
+              "profile": "quiet_b",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 19,
+          "valid_stopping": "single_pass",
+          "iterations": 2,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [
+            "b"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 2,
+          "per_profile": [
+            {
+              "profile": "skew",
+              "estimated_spill_operations": 19
+            },
+            {
+              "profile": "quiet_b",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 19,
+          "valid_stopping": "single_pass",
+          "iterations": 2,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [
+            "b"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 2,
+          "per_profile": [
+            {
+              "profile": "skew",
+              "estimated_spill_operations": 19
+            },
+            {
+              "profile": "quiet_b",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 19,
+          "valid_stopping": "no_improving_move",
+          "iterations": 1,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "game_worst",
+      "description": "Same program as game_average with tradeoff 1. The first strict improvement keeps b, which lowers the worse profile.",
+      "k": 1,
+      "tradeoff": "1",
+      "budget": 10,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [
+            "b"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 2,
+          "per_profile": [
+            {
+              "profile": "skew",
+              "estimated_spill_operations": 19
+            },
+            {
+              "profile": "quiet_b",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 19,
+          "valid_stopping": "single_pass",
+          "iterations": 2,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [
+            "b"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 2,
+          "per_profile": [
+            {
+              "profile": "skew",
+              "estimated_spill_operations": 19
+            },
+            {
+              "profile": "quiet_b",
+              "estimated_spill_operations": 0
+            }
+          ],
+          "sum": 19,
+          "valid_stopping": "single_pass",
+          "iterations": 2,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [
+            "a"
+          ],
+          "assigned": 1,
+          "static_spill_operations": 4,
+          "per_profile": [
+            {
+              "profile": "skew",
+              "estimated_spill_operations": 10
+            },
+            {
+              "profile": "quiet_b",
+              "estimated_spill_operations": 10
+            }
+          ],
+          "sum": 20,
+          "valid_stopping": "no_improving_move",
+          "iterations": 1,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": null,
+            "b": "p0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "zero_registers",
+      "description": "num_registers is 0. The input policy spills every live range.",
+      "k": 0,
+      "tradeoff": "1/2",
+      "budget": 5,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [
+            "a",
+            "b",
+            "c"
+          ],
+          "assigned": 0,
+          "static_spill_operations": 6,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 6
+            }
+          ],
+          "sum": 6,
+          "valid_stopping": "single_pass",
+          "iterations": 3,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": null,
+            "b": null,
+            "c": null
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [
+            "a",
+            "b",
+            "c"
+          ],
+          "assigned": 0,
+          "static_spill_operations": 6,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 6
+            }
+          ],
+          "sum": 6,
+          "valid_stopping": "single_pass",
+          "iterations": 3,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": null,
+            "b": null,
+            "c": null
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [
+            "a",
+            "b",
+            "c"
+          ],
+          "assigned": 0,
+          "static_spill_operations": 6,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 6
+            }
+          ],
+          "sum": 6,
+          "valid_stopping": "no_improving_move",
+          "iterations": 0,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": null,
+            "b": null,
+            "c": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "insufficient_registers",
+      "description": "Four simultaneously live ranges and one physical register, so at least three of them spill.",
+      "k": 1,
+      "tradeoff": "1/2",
+      "budget": 20,
+      "results": [
+        {
+          "algorithm": "static_greedy",
+          "spills": [
+            "b",
+            "c",
+            "d",
+            "f"
+          ],
+          "assigned": 3,
+          "static_spill_operations": 8,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 8
+            }
+          ],
+          "sum": 8,
+          "valid_stopping": "single_pass",
+          "iterations": 7,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": null,
+            "d": null,
+            "e": "p0",
+            "f": null,
+            "g": "p0"
+          }
+        },
+        {
+          "algorithm": "profile_greedy",
+          "spills": [
+            "b",
+            "c",
+            "d",
+            "f"
+          ],
+          "assigned": 3,
+          "static_spill_operations": 8,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 8
+            }
+          ],
+          "sum": 8,
+          "valid_stopping": "single_pass",
+          "iterations": 7,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": null,
+            "d": null,
+            "e": "p0",
+            "f": null,
+            "g": "p0"
+          }
+        },
+        {
+          "algorithm": "potential_game",
+          "spills": [
+            "b",
+            "c",
+            "d",
+            "f"
+          ],
+          "assigned": 3,
+          "static_spill_operations": 8,
+          "per_profile": [
+            {
+              "profile": "once",
+              "estimated_spill_operations": 8
+            }
+          ],
+          "sum": 8,
+          "valid_stopping": "no_improving_move",
+          "iterations": 3,
+          "execution_time_ms": null,
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": null,
+            "d": null,
+            "e": "p0",
+            "f": null,
+            "g": "p0"
+          }
+        }
+      ]
+    }
+  ]
+}
