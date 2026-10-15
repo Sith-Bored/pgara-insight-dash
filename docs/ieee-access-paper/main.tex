@@ -42,14 +42,13 @@
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
 T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
-
 \begin{document}
 \history{Manuscript prepared for submission. Publication dates have not been assigned.}
 \doi{Not assigned}
 \vol{--}
 \Year{--}
 
-\title{A Profile-Guided Register-Allocation Prototype With Greedy Packing and Local Potential Search}
+\title{Profile-Guided Register Allocation With a Local Potential Search and a Research Dashboard}
 
 \author{\uppercase{Author Name Not Supplied}\authorrefmark{1}}
 \address[1]{Affiliation, institution, city, and country were not supplied.}
@@ -62,18 +61,16 @@ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \corresp{Corresponding author: not supplied (e-mail: not supplied).}
 
 \begin{abstract}
-Register allocation maps virtual registers onto a finite physical file and spills the remainder.
-Profile-guided optimization uses supplied block frequencies so that spill decisions can follow executed paths.
-A spill cost remains an estimate: it depends on which ranges spill, where loads and stores would occur, and which counts the caller trusts.
-Graph coloring, linear scan, and learned allocators in production compilers often split ranges, coalesce copies, or rewrite spill code.
-A static weight can keep a range that is costly in the text and cheap on a hot path, and a one-range search can miss a joint reassignment.
-This paper documents PGARA, a batch prototype for a small three-address representation.
-It builds a control-flow graph and may-liveness, forms an interference graph with one live range per virtual register, and scores spills from caller-supplied counts.
-Static greedy and profile-weighted greedy pack ranges in one pass.
-A potential search accepts a unilateral move only when a tradeoff between average and worst-profile cost strictly decreases.
-On the built-in suite, profile weighting changes the spilled range in one case (estimated costs 8 and 101), and the tradeoff changes the potential search from estimated cost 19 to 20.
-These figures are not measured runtime, and the search is not globally optimal.
-Splitting, coalescing, and application-level timing remain future work.
+Register allocation assigns simultaneously live values to a finite register file and accounts for the rest with memory traffic.
+A profile can change which value is expensive to spill, but only when every block count is supplied and the cost is defined as an estimate rather than as measured time.
+Graph coloring, linear scan, and learned allocators usually split ranges, coalesce copies, or emit spill code inside a production compiler.
+A static site count can keep a cold value, and a search that moves one range at a time can miss a joint swap.
+This paper documents PGARA, a batch prototype and a React research workspace for a small three-address language.
+The analyzer builds may-liveness and an interference graph, then runs static greedy packing, profile-weighted greedy packing, and a potential search over average and worst-profile spill estimates.
+The workspace shows those assignments, the graph, and a synthetic suite, and it keeps a fixed sample fixture separate from backend results.
+On the built-in suite, profile weighting changes one spill set from estimated cost 101 to 8, and tradeoff 1 changes the search from estimated cost 19 to 20.
+These figures are not application runtime.
+Splitting, coalescing, spill-code emission, and timed application runs remain future work.
 \end{abstract}
 
 \begin{keywords}
@@ -86,164 +83,167 @@ compiler optimization, interference graph, potential game, profile-guided optimi
 \section{Introduction}
 \label{sec:introduction}
 \IEEEPARstart{R}{egister} allocation is a late compiler pass.
-Values that stay in registers avoid the latency and code size of memory traffic, but a target provides only a finite set of physical registers.
-When two values are live at the same program point they cannot share a register, so the allocator either assigns distinct registers or spills a value to memory and reloads it at later uses.
-The project name PGARA expands to profile-guided adaptive register allocation.
-In the implementation inspected here, ``adaptive'' does not mean an online controller.
-The analyzer is a batch procedure: the caller supplies the program, the register count, and one or more execution profiles.
+Values that remain in registers avoid the latency of memory traffic, but a target provides only finitely many physical registers.
+Two values that are live at the same program point cannot share a register, so the allocator assigns distinct registers or spills a value and reloads it at later uses.
+PGARA means profile-guided adaptive register allocation.
+In the system inspected here, adaptive does not mean an online controller.
+The caller supplies the program, the register count, and one or more execution profiles, and both the analyzer and the dashboard run as a batch.
 
-The motivation is the gap between a spill decision and the cost a user can defend.
-A static count of definitions and uses treats a cold block and a hot block alike.
-A profile can reverse that preference, but only if every block has an explicit count and the cost model states what a spill means.
-Production compilers already combine profiles with many other optimizations \cite{liu2025,lattner2004}.
-Isolating the allocation choice from instruction selection, scheduling, and spill-code insertion makes the estimate easier to audit and easier to misread as a runtime result.
-PGARA is built to keep that distinction visible.
+The practical problem is that a spill decision is easy to display and hard to defend.
+A count of definitions and uses treats a cold block and a hot block alike.
+A profile can reverse that preference only when every block has an explicit count and the cost model states what a spill means.
+Production compilers already combine profiles with instruction selection, scheduling, and spill insertion \cite{liu2025,lattner2004}.
+Isolating the allocation choice makes the estimate easier to audit and easier to mistake for a runtime result.
+The research workspace exists so that a zero estimate, a spilled range, and a sample fixture are not shown as the same kind of number.
 
-Classical allocators color an interference graph \cite{chaitin1981,chaitin1982,briggs1994,george1996}, scan live intervals in roughly linear time \cite{poletto1999,traub1998,wimmer2005}, or solve a structured assignment such as the puzzle formulation of Pereira and Palsberg \cite{pereira2008}.
-Profile information has been used to place spills by expected distance to the next use \cite{burroughs2016}.
-More recent work learns allocation policies inside LLVM \cite{venkatakeerthy2022}, publishes interference-graph data for learning \cite{silva2024}, or searches with an evolutionary encoding \cite{terci2024}.
-Other papers retarget allocation to GPU register files \cite{oh2022}, timing-speculative pipelines \cite{xiao2022,xiao2023}, application-specific baseband kernels \cite{chen2022}, or dual-usage vector registers \cite{hu2022}.
-Those results are real for their own metrics.
-They do not, by themselves, say which spilled set is cheaper under a caller-supplied multi-profile estimate on PGARA's intermediate representation.
+Classical allocators color an interference graph \cite{chaitin1981,chaitin1982,briggs1994,george1996} or scan live intervals in roughly linear time \cite{poletto1999,traub1998,wimmer2005}.
+Pereira and Palsberg formulate the register file as a puzzle \cite{pereira2008}.
+Expected distance to the next use has been used to place spill instructions \cite{burroughs2016}.
+Those methods are implemented in compilers that rewrite the program.
 
-The shortcomings that matter for this prototype are concrete.
-Coloring and scan allocators usually rewrite the program into spill code and may split or coalesce ranges; PGARA does neither, so it cannot claim their code-quality results.
+More recent work learns a policy inside LLVM \cite{venkatakeerthy2022}, publishes interference graphs for learning \cite{silva2024}, or searches with an evolutionary encoding \cite{terci2024}.
+Other papers retarget allocation to GPU register files \cite{oh2022}, timing-speculative pipelines \cite{xiao2022,xiao2023}, application-specific baseband kernels \cite{chen2022}, or dual-usage vector names \cite{hu2022}.
+Their metrics are real for those systems.
+They do not, by themselves, say which spill set is cheaper under a caller-supplied multi-profile estimate on this intermediate representation.
+
+The shortcomings that matter here are concrete.
+Coloring and scan allocators usually emit spill code and may split or coalesce ranges.
+PGARA does neither, so it cannot claim their code-quality results.
 A single spill weight hides disagreement among profiles.
-A search that moves only one live range cannot swap two ranges in one step, even when the swap would look better.
-Learned allocators require a training corpus and a full compiler backend \cite{silva2024,venkatakeerthy2022}, which this repository does not include.
+A search that changes one live range cannot swap two ranges in one step.
+Learned allocators need a training corpus and a full backend \cite{silva2024,venkatakeerthy2022}, which this repository does not include.
+A dashboard that redraws one algorithm's cost as if it were the other three would hide that fact.
+The implementation plots each returned sum separately.
 
-The implemented technique is therefore a small pipeline that can be inspected.
-After parsing and validation, the analyzer builds a control-flow graph, computes may-liveness, and adds an interference edge wherever two virtual registers are simultaneously live.
-Spill sites are the live uses and the live definitions of each range.
+The implemented system is a pipeline together with a workspace that calls it.
+After parsing, the analyzer builds a control-flow graph, computes may-liveness, and adds an interference edge where two virtual registers are simultaneously live.
 Static greedy orders ranges by a profile-independent site count.
-Profile-weighted greedy orders them by the sum of estimated dynamic spill operations across the supplied profiles.
-The potential search starts from a valid assignment, by default the all-spilled assignment, and accepts a feasible change of one range only when the potential in Section~\ref{sec:equations} strictly decreases.
-The same assignment is reported through a FastAPI service and a React dashboard so that a zero estimate is visible as data rather than as an empty plot.
-Suitability is limited to explanation, regression tests, and synthetic cases.
-The prototype is not a drop-in replacement for a production register allocator.
+Profile-weighted greedy orders them by the sum of estimated spill operations across the supplied profiles.
+The potential search starts from the all-spilled assignment by default and accepts a feasible change of one range only when the potential in Section~\ref{sec:equations} strictly decreases.
+FastAPI exposes health, a sample program, allocation, and a synthetic benchmark.
+The React workspace has six views: overview, program editor, allocation lab, interference graph, benchmark comparison, and algorithm trace.
 
-The paper follows that outline inside the IEEE Access article format.
-The abstract is one paragraph, within the journal's 150--250 word limit \cite{ieeeaccess-authors}.
-The longer line-counted abstract outline supplied with the manuscript brief is expanded in this introduction rather than set as a second abstract.
-Section~\ref{sec:related} discusses verified related work and the gap relative to PGARA.
-Section~\ref{sec:proposed} formulates the problem, describes the architecture and modules, and records the equations and algorithms taken from the source.
-Section~\ref{sec:results} states the tools, parameters, and results that were actually computed, and it separates those results from illustrations and from experiments that were not run.
-Section~\ref{sec:conclusion} summarizes the limits and the realistic next measurements.
+The workspace is suitable for explanation and regression, not as a replacement allocator.
+Sample mode shows a fixed illustration and does not recompute when the editor changes.
+Backend mode sends the editor contents only when the user runs an experiment.
+A failed request is not replaced by the sample fixture.
+
+The paper follows the requested outline inside the IEEE Access article format.
+The abstract is one paragraph within the journal's 150--250 word limit \cite{ieeeaccess-authors}.
+Section~\ref{sec:related} discusses verified related work.
+Section~\ref{sec:proposed} formulates the problem and records the architecture, the dashboard, the equations, and the algorithms taken from the source.
+Section~\ref{sec:results} states the tools, including the frontend commands, and the estimates that were computed.
+Section~\ref{sec:conclusion} states the limits and the next measurements.
 
 \section{Related Work}
 \label{sec:related}
-This section discusses fifteen scholarly works whose bibliographic records were retrieved and checked.
-Each paragraph states the proposal, the method and tools named by the source, the result stated in the retrieved abstract or title, and the gap relative to PGARA.
-Where the retrieved abstract does not give a number, no number is added.
-None of these experiments was re-run in this repository.
-Their benchmarks, instruction sets, and cost units differ from the estimated spill operations defined in Section~\ref{sec:equations}, so this paper does not rank PGARA against them.
+This section discusses scholarly works whose bibliographic records were retrieved and checked.
+Each paragraph states the proposal, the method named by the source, the result stated in the retrieved abstract or title, and the gap relative to PGARA.
+Where an abstract does not give a number or an implementation tool, none is added.
+None of these experiments was re-run here.
+Their benchmarks and cost units differ from the estimated spill operations in Section~\ref{sec:equations}, so this paper does not rank the prototype against them.
+The brief asked for fifteen papers from the last five years, each with two paragraphs of experimental tools.
+Nine works from 2022--2025 were verified.
+The classical papers below are included because they are the methods under discussion.
+The shortfall is listed with the draft.
 
 Chaitin \emph{et al.} formulated register allocation as graph coloring \cite{chaitin1981}.
-The verified record is the 1981 \emph{Computer Languages} paper; the retrieved metadata did not include an abstract with experimental figures.
-A companion paper treats allocation and spilling via graph coloring \cite{chaitin1982}.
-The method, as used by later coloring allocators, builds an interference graph and spills when a legal coloring is not available.
-No spill-count figure from those papers is repeated here because it was not in the metadata retrieved for this manuscript.
-The gap is that a coloring formulation does not, by itself, define PGARA's multi-profile estimate or its one-range search.
+The verified record is the 1981 \emph{Computer Languages} paper.
+The retrieved metadata did not include an experimental abstract.
+A companion paper treats spilling via graph coloring \cite{chaitin1982}.
+Later coloring allocators build an interference graph and spill when a legal coloring is unavailable.
+No spill-count figure from those papers is repeated here.
+The gap is that coloring does not define this multi-profile estimate or the one-range search, and it does not define the workspace that displays them.
 
-Briggs, Cooper, and Torczon improved Chaitin-style coloring with optimistic coloring and a broader treatment of rematerialization \cite{briggs1994}.
-The work is a compiler implementation study.
-The abstract reports that optimistic coloring decreases the number of procedures that require spill code and reduces spill code when spilling remains necessary, and that rematerialization lowers the cost of spilling some values.
-Exact percentages were not in the retrieved abstract, so they are omitted.
+Briggs, Cooper, and Torczon added optimistic coloring and a broader treatment of rematerialization \cite{briggs1994}.
+The abstract reports that optimistic coloring decreases the number of procedures that need spill code and reduces spill code when spilling remains necessary, and that rematerialization lowers the cost of spilling some values.
+Exact percentages were not in the retrieved abstract.
 PGARA does not rematerialize values and does not report procedure-level spill-code size.
 
 George and Appel interleaved coloring reductions with conservative coalescing \cite{george1996}.
-The method targets copy elimination: nodes that do not interfere may be merged, but unrestricted merging can create spills.
+The method targets copy elimination.
 The abstract states that Briggs's conservative heuristic leaves too many moves and that iterated coalescing addresses that conservatism.
-No new runtime number is taken from the paper here.
-PGARA does not coalesce copies, and its cost model ignores moves between physical registers unless the spill set changes.
+PGARA does not coalesce copies.
+Its cost changes only when the spill set changes.
 
 Poletto and Sarkar replaced coloring with linear scan \cite{poletto1999}.
-The allocator visits live ranges in a linear pass rather than building a full coloring search.
-The abstract reports that the algorithm is considerably faster than graph coloring and produces code almost as efficient, with dynamic compilation among the intended uses.
-No percentage from that evaluation is copied beyond those words.
-PGARA's greedy pass is also a single packing pass, but it still builds an interference graph and does not allocate by interval endpoints.
+The allocator visits live ranges in one pass.
+The abstract reports that the algorithm is considerably faster than graph coloring and produces code almost as efficient.
+PGARA's greedy pass is also one packing pass, but it still builds an interference graph and does not allocate by interval endpoints.
 
 Traub, Holloway, and Smith compared linear scan with graph coloring where compile time matters \cite{traub1998}.
-The abstract describes a linear sweep over register candidates and contrasts it with coloring in optimizing compilers.
-The retrieved abstract is truncated before any numeric table, so no speed or code-quality delta is stated here.
-The gap is the same metric mismatch: their comparison is compile time and generated-code performance, not a caller-supplied multi-profile spill estimate.
+The retrieved abstract is truncated before any numeric table.
+Their comparison is compile time and generated-code performance, not a caller-supplied multi-profile estimate.
 
 Wimmer and M\"ossenb\"ock added lifetime holes and interval splitting to linear scan in the Java HotSpot client compiler \cite{wimmer2005}.
-The method splits intervals when register pressure is high and is aimed at just-in-time compilation.
-The retrieved abstract does not include a numeric speedup, so none is reported.
-PGARA keeps one live range per virtual register and has no splitting pass; the range identifier is reserved for a later split, but that pass is not implemented.
+The retrieved abstract does not include a numeric speedup.
+PGARA keeps one live range per virtual register.
+The range identifier is reserved for a later split that is not implemented.
 
-Pereira and Palsberg modeled the register file as a puzzle board and variables as pieces, including precoloring and register aliasing \cite{pereira2008}.
+Pereira and Palsberg modeled registers as a puzzle board, including precoloring and aliasing \cite{pereira2008}.
 For PowerPC, x86, and StrongARM the puzzles are solved in polynomial time, with a heuristic for spilling.
 On SPEC CPU2000, the abstract reports compilation time as fast as the extended linear scan used by LLVM in that setting, and x86 code of similar quality.
-PGARA does not model aliasing or paired registers, and it was not run on SPEC.
+PGARA was not run on SPEC and does not model paired registers.
 
-Burroughs used expected distance to the next use, computed from branch probabilities, and then placed spill instructions with block frequencies \cite{burroughs2016}.
-The implementation is a register allocator evaluated against LLVM on SPEC CINT2000 for ARMv7.
-The abstract reports average reductions, versus LLVM, of more than 36\% and 50\% in dynamically executed stores and loads with statically derived profiles, and 50\% and 60\% with dynamic profiles.
-Those percentages belong to that LLVM comparison.
-They are not measurements of PGARA.
-The gap is that PGARA never emits spill instructions and never counts retired loads; it sums supplied block counts at abstract use and definition sites.
+Burroughs used expected distance to the next use and placed spill instructions with block frequencies \cite{burroughs2016}.
+The allocator was evaluated against LLVM on SPEC CINT2000 for ARMv7.
+The abstract reports average reductions, versus LLVM, of more than 36\% and 50\% in dynamically executed stores and loads with static profiles, and 50\% and 60\% with dynamic profiles.
+Those percentages belong to that comparison.
+PGARA never emits spill instructions and never counts retired loads.
 
 da Silva, Senefonte, and Attrot published an interference-graph dataset for machine-learning register allocation \cite{silva2024}.
-The abstract identifies graph coloring as NP-complete, notes the shortage of specialized training data, and presents a dataset in response.
-No model-accuracy figure was in the retrieved abstract fragment, so none is given.
+The abstract notes that coloring is NP-complete and that specialized training data are scarce.
+No accuracy figure was in the retrieved fragment.
 PGARA does not train a model and does not export their graph format.
-The shared idea is only that interference structure is the allocation constraint.
 
-Terci, Abdulhalik, Bayrakci, and Boz proposed BitEA, a bit-encoded evolutionary search for register allocation \cite{terci2024}.
-The abstract presents bitwise individuals as a way to search assignments when an exact method is too expensive on current processors.
-The retrieved text does not state a spill-cost delta against a named baseline, so no such delta is claimed.
-PGARA's search is deterministic best improvement on one range, not an evolutionary population, and it stops at a local test rather than a generation limit chosen for CPU time.
+Terci, Abdulhalik, Bayrakci, and Boz proposed BitEA, a bit-encoded evolutionary search \cite{terci2024}.
+The retrieved text does not state a spill-cost delta against a named baseline.
+PGARA's search is deterministic best improvement on one range.
+It stops at a local test rather than at a generation limit chosen for CPU time.
 
-Oh, Jeong, Ro, and Yoon described CASH-RF, a compiler-assisted hierarchical GPU register file that places a small SRAM register cache in front of an STT-MRAM file \cite{oh2022}.
-The method is a hardware and compiler co-design aimed at energy, using the cache as a write buffer because STT-MRAM writes are costly.
-The abstract motivates the hierarchy with density and leakage, not with a multi-profile spill formula.
-PGARA names physical registers \texttt{p0}, \texttt{p1}, and so on, and it has no cache hierarchy and no energy model.
+Oh, Jeong, Ro, and Yoon described CASH-RF, a hierarchical GPU register file with a small SRAM cache in front of STT-MRAM \cite{oh2022}.
+The method is a hardware and compiler co-design aimed at energy.
+PGARA names registers \texttt{p0}, \texttt{p1}, and so on.
+It has no cache hierarchy and no energy model.
 
 Xiao, Chen, He, and Yang reallocated registers to loosen read-after-write dependencies on timing-speculative processors \cite{xiao2023}.
-The method builds a read-write dependency aware interference graph and is compared conceptually with no-operation padding.
-The retrieved abstract states a reduction of timing errors as the goal and does not give a spill-operation count.
-A related paper uses a dependency-aware interference graph for voltage scaling \cite{xiao2022}.
-Both objectives differ from PGARA's estimated spill operations.
-A timing-error rate cannot be read as a PGARA cost.
+The method builds a dependency-aware interference graph.
+The retrieved abstract does not give a spill-operation count.
+A related paper uses that graph for voltage scaling \cite{xiao2022}.
+A timing-error rate is not a PGARA cost.
 
 Chen, Liu, and Liu studied allocation for application-specific processors in 5G micro-baseband kernels \cite{chen2022}.
-The method exploits known, fixed data sizes and parallel data access rather than a general profile set.
-The retrieved abstract does not report PGARA's metrics.
-The gap is the program model: PGARA accepts a textual three-address language with explicit block counts, not a baseband kernel schedule.
+The method uses known data sizes and parallel access.
+PGARA accepts a textual three-address language with explicit block counts, not a baseband schedule.
 
-Hu, Zhang, Wang, Liang, and Li allocated code that uses array-unit dual-usage register names on SIMD processors \cite{hu2022}.
-The method combines ordinary register allocation with names that can be read as a whole or lane by lane, so scalar and vector views stay consistent.
-The abstract describes that consistency problem rather than a profile-weighted spill sum.
+Hu, Zhang, Wang, Liang, and Li allocated code that uses array-unit dual-usage register names \cite{hu2022}.
+The method keeps scalar and vector views of the same name consistent.
 PGARA's interference relation is pairwise presence at an instruction boundary, with no lane aliasing.
 
-VenkataKeerthy \emph{et al.} embedded multi-agent reinforcement learning in LLVM for register allocation \cite{venkatakeerthy2022}.
-The preprint reports an architecture-independent interface and experiments on x86 and AArch64, and its abstract says the results match or outperform the heavily tuned LLVM allocators used in that study.
-This manuscript does not repeat a numeric speedup from the preprint, and the PGARA tests did not reproduce that LLVM comparison.
-The gap is both the compiler and the objective: RL4ReAl emits ISA-constrained code, whereas PGARA returns an assignment map and an estimate.
+VenkataKeerthy \emph{et al.} embedded multi-agent reinforcement learning in LLVM \cite{venkatakeerthy2022}.
+The preprint reports an interface for x86 and AArch64, and its abstract says the results match or outperform the LLVM allocators used in that study.
+This manuscript does not repeat a numeric speedup, and the tests here did not reproduce that comparison.
+RL4ReAl emits ISA-constrained code.
+PGARA returns an assignment map and an estimate, which the dashboard then draws.
 
-Liu \emph{et al.} surveyed profile-guided optimization from instrumentation and sampling through compile-time and link-time passes in GCC and LLVM \cite{liu2025}.
+Liu \emph{et al.} surveyed profile-guided optimization in GCC and LLVM \cite{liu2025}.
 The preprint is a survey, not a new allocator.
-It identifies open issues such as sampling overhead, changing workloads, and cross-architecture portability.
+It identifies sampling overhead, changing workloads, and cross-architecture portability as open issues.
 PGARA does not collect profiles.
 It refuses to invent a missing block count.
-That is a narrower contract than a sampling profiler, and it leaves workload drift unmeasured.
 
-Two further sources are used outside this comparison.
+Two further sources support the wording, not the comparison.
 Monderer and Shapley introduced potential games \cite{monderer1996}.
-PGARA names its objective a potential and accepts only strict decreases, but the source does not contain a proof that every unilateral deviation's payoff change equals the change in that function in the sense of \cite{monderer1996}.
-Lattner and Adve presented LLVM as a lifelong analysis framework \cite{lattner2004}.
-Several allocators above are implemented in LLVM.
-PGARA is not.
+PGARA names its objective a potential and accepts only strict decreases.
+The source does not contain a proof that every unilateral payoff change equals the change in that function.
+Lattner and Adve presented LLVM \cite{lattner2004}.
+PGARA is not an LLVM pass.
 
-The manuscript does not reach thirty scholarly references.
-The brief asked for about thirty sources dated 2018--2024 and illustrated an author-year layout.
-This draft uses IEEE numbered citations, as required by the journal \cite{ieeeaccess-authors}, and it keeps earlier register-allocation papers because they are the methods under discussion.
-It does not add unrelated recent papers to fill the count.
-Additional register-allocation papers were found, including a 2024 GPU hierarchical-register compiler paper, but no usable abstract was retrieved for that record, so it is not discussed.
-Oil-spill and marine-allocation papers returned by a broad search are unrelated and are omitted.
-The shortfall is recorded in the checklist that accompanies this draft.
+The manuscript does not reach thirty sources from 2018 through 2024.
+The brief showed an author-year reference layout.
+This draft uses numbered IEEE citations \cite{ieeeaccess-authors}.
+A 2024 GPU hierarchical-register paper was seen, but no usable abstract was retrieved, so it is not discussed.
+Unrelated search hits were omitted.
 
 \section{Proposed Work}
 \label{sec:proposed}
@@ -251,221 +251,205 @@ The shortfall is recorded in the checklist that accompanies this draft.
 \subsection{Problem Formulation}
 \label{sec:formulation}
 The input is a program in a restricted three-address language, an integer register count $k$, and zero or more execution profiles.
-A program is a sequence of labeled basic blocks.
 Instructions assign a constant, copy a register, or apply addition, subtraction, multiplication, or division.
-Terminators are conditional branches of the form \texttt{if} \emph{register} \texttt{goto} \emph{label}, unconditional jumps, and returns.
-A comparison such as \texttt{if t3 > 10 goto B1} is rejected rather than approximated.
+Terminators are \texttt{if} \emph{register} \texttt{goto} \emph{label}, unconditional jumps, and returns.
+A comparison such as \texttt{if t3 > 10 goto B1} is rejected.
 The false edge of a conditional branch is the next block in source order.
 The last block must end with a return or a jump.
-Profiles are not written in the text.
-Each profile maps every block label to a nonnegative integer execution count.
+Each profile maps every block label to a nonnegative integer.
 Omitting a label is an error.
-The analyzer does not substitute zero.
+The analyzer does not substitute zero, and the dashboard does not invent a count for a blank profile cell before a run.
 
-Let $R$ be the set of virtual registers that are live at any instruction boundary.
-Milestone~1 creates one live range per such register.
-The allocation key is the range identifier, which currently equals the virtual-register name because ranges are not split.
-An assignment $A$ maps each range to a physical register $\mathrm{p}_i$ with $0 \leq i < k$, or to spill.
+Let $R$ be the virtual registers that are live at any instruction boundary.
+One live range is created per such register.
+The allocation key is the range identifier, which equals the virtual-register name because ranges are not split.
+An assignment maps each range to $\mathrm{p}_i$ with $0 \leq i < k$, or to spill.
 JSON \texttt{null} means spill.
-An assignment is illegal when two interfering ranges receive the same physical register.
+An assignment is illegal when two interfering ranges share a physical register.
 The integer $k$ may be zero, in which case every range spills.
-If $k$ is positive but an interference clique does not fit, the ranges that receive no register spill.
-That outcome is a result, not an input error.
+The service accepts $0 \leq k \leq 256$.
+The dashboard slider runs from 1 to 16.
 Negative $k$ is rejected.
-The implemented upper bound is $k \leq 256$.
-
-The objective implemented in source is not a proof of minimum memory traffic.
-For each spilled range the analyzer estimates how many load and store events the supplied counts imply.
-Registers that are kept contribute nothing to that sum.
-Moving a kept range from $\mathrm{p}_0$ to $\mathrm{p}_1$ does not change the estimate.
-Consequently two different legal packings of the same spill set have the same estimated cost.
-The potential search optimizes the estimate, not a measured cycle count.
+The objective is not a proof of minimum memory traffic.
+Kept registers contribute nothing to the estimate, so two legal packings of the same spill set have the same cost.
 
 \subsection{System Architecture}
 \label{sec:architecture}
 Figure~\ref{fig:architecture} separates the library, the HTTP service, and the dashboard.
+Figure~\ref{fig:dashboard} shows the same path from the workspace controls.
 The library parses text or structured JSON, validates profiles, and runs the analyses in a fixed order.
-The service exposes health, a sample program, allocation, and a synthetic benchmark.
-The dashboard can show a fixed illustrative fixture or call the service.
+The service exposes health, a sample program, allocation, and the synthetic benchmark.
+The dashboard either shows a fixed fixture or calls the service.
 Sample mode does not compute an allocation.
 Backend mode does not substitute the fixture when a request fails.
 
-\Figure[t!][width=\columnwidth]{fig-architecture.pdf}{System architecture of the PGARA prototype. Estimates returned by the allocators are not measured program runtime.\label{fig:architecture}}
+\Figure[t!][width=\columnwidth]{fig-architecture.pdf}{Library, service, and dashboard. Estimates are not measured program runtime.\label{fig:architecture}}
 
-The default local service address used by the dashboard is \url{http://127.0.0.1:8741}.
-Cross-origin requests are accepted from \texttt{localhost} and \texttt{127.0.0.1} on any port and are rejected for other origins.
+\Figure[t!][width=\columnwidth]{fig-dashboard.pdf}{Workspace path. The run button sends allocation, then the synthetic suite with an empty body.\label{fig:dashboard}}
+
+The default service address is \url{http://127.0.0.1:8741}.
+The client reads \texttt{VITE\_PGARA\_API\_URL} when that variable is set.
+Cross-origin requests are accepted from \texttt{localhost} and \texttt{127.0.0.1} on any port.
 Credentials are not enabled.
-The dashboard's register slider runs from 1 to 16 even though the service accepts 0 through 256.
-Load cost, store cost, iteration budget, and the game's initial assignment are not separate dashboard controls.
 Allocation requests send the robustness slider as the tradeoff, start the potential search from the all-spilled assignment, and use iteration budget 200.
-After the benchmark-request correction in the inspected source, the synthetic suite posts an empty JSON object, so each built-in case keeps the tradeoff and budget stored with that case.
+The synthetic suite posts an empty JSON object, so each built-in case keeps its own tradeoff and budget.
+Changing the editor, the slider, or the profile table sets a dirty flag and does not call the service until the user runs.
 
 \subsection{Modules}
 \label{sec:modules}
 The parser accepts one instruction per line, \texttt{\#} comments, and block headers of the form \texttt{block name:}.
 Structured input uses opcodes \texttt{const}, \texttt{mov}, \texttt{add}, \texttt{sub}, \texttt{mul}, \texttt{div}, \texttt{br}, \texttt{jmp}, and \texttt{ret}.
 The caller must provide exactly one of source text or structured blocks.
-Limits enforced by the service are 32 profiles, 500 blocks, 5000 instructions, and 100000 source characters.
+Limits are 32 profiles, 500 blocks, 5000 instructions, and 100000 source characters.
 
 Control-flow construction records fall-through, the true branch, the false branch, and unconditional jumps.
-May-liveness then iterates a backward transfer until block live-in and live-out stop changing.
-A use that has no definition anywhere in the function is reported as an undefined use.
-That check is not path-sensitive: a definition on one branch still counts as a definition.
-A definition whose new value is never live is reported as a dead definition and does not become a store in the spill model.
+May-liveness iterates backward until block live-in and live-out stop changing.
+A use with no definition anywhere in the function is an undefined use.
+That check is not path-sensitive.
+A definition whose new value is never live is a dead definition and is not a store.
 The same virtual register used twice in one instruction contributes one use.
-The response does not prove that a register is initialized on every path.
 
-Interference is pairwise.
-If two ranges are both live at an instruction boundary, the graph contains one undirected edge.
-Nodes and edges are part of the allocation response, together with per-instruction live-in and live-out sets.
-The dashboard draws the returned edges on a circle layout.
-That picture is a view of the graph, not a second interference analysis.
-Degree and the per-instruction liveness lists are returned by the service and are not all rendered.
-
-The cost module is the only producer of the numbers later called estimated spill operations.
-Static greedy never reads profiles when it orders ranges.
-If profiles are present, the service still evaluates that static assignment under those profiles so the three algorithms can be tabulated together.
+Interference is pairwise at instruction boundaries.
+The response includes nodes, edges, degrees, and per-instruction live sets.
+The dashboard draws the returned edges on a circle.
+That picture is a view of the graph, not a second analysis.
+The cost module is the only producer of estimated spill operations.
+Static greedy does not read profiles when it orders ranges.
+If profiles are present, the service still evaluates the static assignment under them.
 Profile-weighted greedy and the potential search require at least one profile.
-Requesting either algorithm alone without a profile is an input error.
-Requesting all three algorithms without a profile runs static greedy and marks the other two as skipped.
+Requesting all three algorithms without a profile runs static greedy and marks the other two skipped.
 
-The dashboard maps each service identifier to a display label.
+The TypeScript client maps service names to display labels.
 
 \texttt{static\_greedy} is shown as Static greedy.
 
 \texttt{profile\_greedy} is shown as Profile-weighted.
 
 \texttt{potential\_game} is shown as Potential game.
-The assignment view has its own algorithm menu.
-The comparison chart does not read that menu.
-It plots each returned result's own sum.
-A chart of zeros is therefore a statement that every returned sum was zero.
-The zero-cost chart change annotates that fact.
-It does not alter the allocator.
 
-\subsection{Flow}
-\label{sec:flow}
-Figure~\ref{fig:flow} is the allocation flow implemented by the analyzer.
-Validation fails closed: unknown labels, negative counts, comparison branches, and extra JSON fields are rejected.
-Liveness is a fixpoint, not a single backward pass, because loops require iteration.
-The loop sample in the benchmark suite exists for that reason.
-Interference and spill sites are derived from the fixpoint.
-Only then do the allocators run.
-The potential search may call a greedy allocator when its requested start is the static or profile-weighted packing.
-The dashboard default does not use those starts.
+The comparison chart reads every returned sum.
+It does not copy the algorithm selected in the assignment menu.
+A chart of zeros means every returned sum was zero.
+The client schema keeps assignments, spill lists, per-profile costs, the interference edges, and the potential-game decision trace.
+Per-instruction liveness remains available from the service response.
 
-\Figure[t!][width=\columnwidth]{fig-flow.pdf}{Allocation flow. Profile counts are never invented for a missing block.\label{fig:flow}}
-
-Figure~\ref{fig:cfg} shows the control-flow shape of the built-in tradeoff program.
-Each edge in that program is an unconditional jump to the next block in the figure.
-The interesting fact is not a rich branch structure.
-It is that the estimated cost of spilling \texttt{a} is 10 on both supplied profiles, while spilling \texttt{b} costs 19 on the profile named skew and 0 on the profile named quiet\_b, with unit load and store weights.
-The new value of \texttt{b = b + 1} is unused, so that instruction contributes a load of \texttt{b} and not a store.
-Figure~\ref{fig:interference} is the corresponding interference graph: \texttt{a} and \texttt{b} interfere, so one register cannot keep both.
-
-\Figure[t!][width=\columnwidth]{fig-cfg.pdf}{Control-flow graph of the built-in tradeoff program. Edges are jumps in source order.\label{fig:cfg}}
-
-\Figure[t!][width=0.72\columnwidth]{fig-interference.pdf}{Interference graph of the tradeoff program. With one physical register, exactly one of \texttt{a} or \texttt{b} can be kept.\label{fig:interference}}
-
-\subsection{Built-in Programs}
-\label{sec:suite}
-The service ships eight synthetic programs.
-Table~\ref{tab:suite} records the register count, tradeoff, and iteration budget stored with each case.
-An empty benchmark request uses those values.
-The dashboard robustness slider is not applied to them.
+\subsection{Workspace}
+\label{sec:workspace}
+Table~\ref{tab:views} lists the six routes.
+Overview shows configuration, the editor, the comparison chart, profiles, the decision trace, assignments, and the graph.
+The program editor keeps text and profile counts local until a run.
+Allocation lab repeats the chart and the assignment table next to the register slider.
+The interference view draws the circle layout for the selected algorithm.
+Benchmark comparison shows the chart, a per-profile chart, the assignment table, and the synthetic suite.
+The algorithm trace shows accepted potential-game moves in backend mode.
+In sample mode the trace is labeled as an illustration and is not produced by the search.
 
 \begin{table}[t]
-\caption{Built-in programs and the parameters stored with each case. Counts are the values in the source, not tuned optima.}
-\label{tab:suite}
+\caption{Dashboard routes. None of them allocates until the user runs an experiment.}
+\label{tab:views}
 \centering
-\begin{tabular}{@{}lrrr@{}}
+\begin{tabular}{@{}ll@{}}
 \toprule
-Case & $k$ & $\lambda$ & Budget \\
+Route & Role \\
 \midrule
-sequential reuse & 1 & $1/2$ & 10 \\
-diamond & 1 & $1/2$ & 20 \\
-loop & 1 & $1/2$ & 20 \\
-profile vs.\ static & 1 & $0$ & 10 \\
-game average & 1 & $0$ & 10 \\
-game worst & 1 & $1$ & 10 \\
-zero registers & 0 & $1/2$ & 5 \\
-insufficient & 1 & $1/2$ & 20 \\
+\texttt{/} & Overview \\
+\texttt{/program-editor} & IR text and profiles \\
+\texttt{/allocation-lab} & Register budget and chart \\
+\texttt{/interference-graph} & Returned edges \\
+\texttt{/benchmark-comparison} & Suite and charts \\
+\texttt{/algorithm-trace} & Potential-game moves \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Sequential reuse is three assignments in one block.
-The ranges do not interfere, so one physical register is reused.
-The diamond is a conditional branch whose false edge is the next block in the text, named \texttt{right}, and whose true edge is \texttt{left}.
-The loop is the reason liveness iterates.
-Its header says \texttt{if i goto body}, and the next block in source order is \texttt{exit}, so the false edge leaves the loop.
-The body is reached only by the true edge and jumps back to the header.
-A single backward pass would not see that \texttt{i} and \texttt{s} are live around the back edge.
+A metric strip shows the physical-register count, the number of live ranges, the lowest returned estimate, and allocator time.
+In sample mode those values stay on the fixture.
+In backend mode, allocator time is the recorded analyzer time for that result.
+It is not a spill penalty and is not used as a reported performance result in Section~\ref{sec:results}.
+Export writes a JSON file with a notice that states whether the payload is the fixture or an estimate.
 
-The profile-versus-static program puts three updates of \texttt{a} in a block counted once and one update of \texttt{b} in a block counted 100 times, then returns \texttt{a}.
-With one register, the static site count and the profile weight order the two ranges differently.
-The two game cases are the tradeoff program of Fig.~\ref{fig:cfg}, one at $\lambda = 0$ and one at $\lambda = 1$, each with budget 10.
-The profile named skew counts the blocks \texttt{def\_a}, \texttt{def\_b}, \texttt{use\_a}, \texttt{use\_b}, and \texttt{exit} as 2, 9, 3, 10, and 2.
-The profile named quiet\_b uses 2, 0, 3, 0, and 2.
-Zero registers runs the sequential program at $k = 0$.
-The insufficient-register case defines four values that are live together at a later addition, with only one physical register.
+\subsection{What the Client Sends}
+\label{sec:client}
+Connection settings offer two sources.
+Sample dataset keeps the fixed illustration.
+FastAPI backend stores a URL, by default \url{http://127.0.0.1:8741}.
+Check connection calls \texttt{GET /api/health} and does not allocate.
+Apply stores the mode and the URL and does not allocate.
+Load sample, in backend mode, calls \texttt{GET /api/sample-program} and fills the editor.
+It does not run the three allocators.
+
+Run Allocation Experiment is the only control that submits the editor.
+The allocation body carries the program text, the register count from the slider, one count per block for each profile, the selected algorithms, and the robustness slider as the tradeoff.
+When all three algorithms are selected, the client sends one request with algorithm \texttt{all}.
+The potential search is started from \texttt{all\_spilled} with iteration budget 200.
+Load and store weights are omitted, so the service uses 1 and 1.
+After that response returns, the client posts an empty object to \texttt{POST /api/benchmark}.
+Each built-in case then keeps the tradeoff and budget in Table~\ref{tab:suite}.
+
+Each algorithm returns a profile row of estimated spill operations.
+The client adds those rows.
+That sum is the chart value.
+JSON \texttt{null} is drawn as a spill.
+A validation error stays on the page as an error banner.
+The sample fixture is not substituted.
+Edits made after a run set a dirty flag until the next run.
+The four numbers in the metric strip are the register count that was sent, the number of live ranges in the response, the lowest of the three sums, and the analyzer time attached to that lowest result.
+In sample mode the strip stays on the fixture: four registers, tradeoff 0.60, and the fixed spill totals 4200, 1800, and 1200.
+
+\subsection{Flow}
+\label{sec:flow}
+Figure~\ref{fig:flow} is the analyzer flow.
+Validation fails closed on unknown labels, negative counts, comparison branches, and extra JSON fields.
+Liveness is a fixpoint because loops require iteration.
+Only then do the allocators run.
+The dashboard default starts the potential search from all spilled, not from a greedy packing.
+
+\Figure[t!][width=\columnwidth]{fig-flow.pdf}{Allocation flow. A missing block count is an error.\label{fig:flow}}
+
+Figure~\ref{fig:cfg} is the built-in tradeoff program.
+Spilling \texttt{a} costs 10 on both supplied profiles.
+Spilling \texttt{b} costs 19 on the profile named skew and 0 on quiet\_b, with unit load and store weights.
+The instruction \texttt{b = b + 1} has an unused new value, so it contributes a load of \texttt{b} and not a store.
+Figure~\ref{fig:interference} shows that \texttt{a} and \texttt{b} interfere, so one register cannot keep both.
+
+\Figure[t!][width=\columnwidth]{fig-cfg.pdf}{Control-flow graph of the tradeoff program.\label{fig:cfg}}
+
+\Figure[t!][width=0.72\columnwidth]{fig-interference.pdf}{Interference graph of the tradeoff program. One register keeps exactly one of \texttt{a} or \texttt{b}.\label{fig:interference}}
 
 Figure~\ref{fig:game} summarizes the potential search.
 The scan order is live-range identifier, then $\mathrm{p}_0,\mathrm{p}_1,\ldots$, then spill.
-Among feasible moves that strictly lower the potential, the search keeps the lowest potential.
-An equal potential does not replace an earlier candidate and is not accepted.
-If the iteration budget is zero, no move is accepted.
-Stopping reasons are a single greedy pass, no improving move, or exhaustion of the budget.
-The no-improving-move reason is a local equilibrium of this neighborhood.
-The implementation states that it is not a proof of global optimality.
+An equal potential does not replace an earlier candidate.
+A zero iteration budget accepts no move.
+The no-improving-move reason is a local equilibrium of this neighborhood, not a proof of global optimality.
 
 \Figure[t!][width=\columnwidth]{fig-game.pdf}{Potential search. Only a feasible one-range change that strictly lowers the potential is accepted.\label{fig:game}}
 
 \subsection{Liveness and Spill Sites}
 \label{sec:liveness}
-Block liveness is ordinary backward may-analysis.
-The live-out set of a block is the union of the live-in sets of its successors.
-Inside the block, the transfer walks instructions from the end toward the start: a destination is removed from the live set, and every register named as an operand is added.
-The iteration stops when no block live-in or live-out changes.
-The implementation also stops and reports an error if the iteration count exceeds $2BN + 2$, where $B$ is the number of blocks and $N$ is the number of mentioned virtual registers, or 1 when the program mentions none.
-That cutoff is a guard.
-It is not a complexity theorem, and the tested programs converge before it.
+Block live-out is the union of successor live-in sets.
+Inside a block the transfer walks backward: a destination is removed, and every operand is added.
+Iteration stops when no block set changes, or reports an error if the count exceeds $2BN+2$, where $B$ is the number of blocks and $N$ is the number of mentioned virtual registers, or 1 when none are mentioned.
+That cutoff is a guard, not a complexity theorem.
 
-After the block solution exists, the same transfer is stored at each instruction boundary.
-Interference pairs are collected from those boundaries, including the live-out set at the end of the block.
-A destination that is live immediately after its instruction is recorded as a store site of that virtual register.
-A destination that is not live is recorded as a dead definition and is not a store site.
+A destination that is live after its instruction is a store site.
+A destination that is not live is a dead definition.
 Each operand occurrence is a load site.
-The lists are gathered during a backward walk and then reversed so that they appear in source order.
-If the walk's live set at the start of a block disagrees with the block live-in, the analyzer raises an error instead of returning an assignment.
-Undefined uses, the names that occur as operands but are never defined anywhere in the function, are listed in the response.
-That list is not path-sensitive.
-
-The allocation response therefore contains more than the three assignment maps.
-It includes the control-flow edges, the per-instruction live sets, the interference edges and degrees, the load and store sites, the undefined-use names, and the dead definitions.
-For the potential search it also includes the accepted moves and the stopping reason.
-The dashboard draws the interference edges and the assignment each algorithm returned, and it plots each algorithm's own sum of profile costs.
-It does not recompute liveness in the browser.
-Fields that the dashboard schema does not display, including the full per-instruction live sets, remain available from the service response.
+If the backward walk disagrees with the block live-in, the analyzer raises an error instead of returning an assignment.
+The loop sample exists because a single backward pass would miss values that are live around the back edge.
+In that program the header says \texttt{if i goto body}, and the next block in source order is \texttt{exit}, so the false edge leaves the loop.
 
 \subsection{Equations}
 \label{sec:equations}
-The symbols below match the functions in the cost module.
-All costs are dimensionless estimated spill operations, not seconds and not joules.
-$w_L$ and $w_S$ are the integer load and store weights.
-The service defaults are $w_L = w_S = 1$, and each weight is an integer from 0 through 1000.
-$U(r)$ is the set of use sites of range $r$, and $D(r)$ is the set of live-definition sites.
-A dead definition is absent from $D(r)$.
-For a site $s$, $\mathrm{block}(s)$ is its basic block.
+Costs are dimensionless estimated spill operations, not seconds and not joules.
+$w_L$ and $w_S$ are the integer load and store weights, each from 0 through 1000, with service defaults $w_L = w_S = 1$.
+$U(r)$ and $D(r)$ are the use sites and the live-definition sites of range $r$.
 Profile $m$ supplies a nonnegative integer $f_m(b)$ for every block $b$.
-$M$ is the number of profiles and is at least one whenever a profile-dependent quantity is evaluated.
+$M \geq 1$ whenever a profile-dependent quantity is evaluated.
 
-The static spill operation count of one range ignores profiles:
 \begin{equation}
 \label{eq:static}
 C^{\mathrm{static}}(r) = w_L \lvert U(r)\rvert + w_S \lvert D(r)\rvert.
 \end{equation}
-The estimated dynamic count of spilling $r$ under profile $m$ multiplies each site by the count of its block:
 \begin{equation}
 \label{eq:profile}
 \begin{aligned}
@@ -473,24 +457,18 @@ C_m(r) ={}& w_L \sum_{u \in U(r)} f_m(\mathrm{block}(u)) \\
 &+ w_S \sum_{d \in D(r)} f_m(\mathrm{block}(d)).
 \end{aligned}
 \end{equation}
-An assignment $A$ pays only for spilled ranges.
-The profile cost of the whole assignment is
 \begin{equation}
 \label{eq:alloc}
 C_m(A) = \sum_{r : A(r)=\mathrm{spill}} C_m(r).
 \end{equation}
-Profile-weighted greedy does not order ranges by $C_m(A)$.
-It orders them by the sum of the per-range estimates, which is independent of the assignment:
+Profile-weighted greedy orders ranges by a weight that does not depend on the assignment:
 \begin{equation}
 \label{eq:weight}
 W(r) = \sum_{m=1}^{M} C_m(r).
 \end{equation}
-Static greedy uses $C^{\mathrm{static}}(r)$ in place of $W(r)$.
-Ties break by range identifier, ascending.
-
-The potential uses the tradeoff $\lambda \in [0,1]$.
-The service converts the request value to a rational with denominator at most $10^6$ before the search.
-With $\mathbf{c}(A) = (C_1(A),\ldots,C_M(A))$,
+Static greedy uses $C^{\mathrm{static}}(r)$ instead.
+Ties break by ascending range identifier.
+With tradeoff $\lambda \in [0,1]$, stored as a rational with denominator at most $10^6$,
 \begin{equation}
 \label{eq:potential}
 \begin{aligned}
@@ -498,50 +476,33 @@ With $\mathbf{c}(A) = (C_1(A),\ldots,C_M(A))$,
 &+ \lambda \max_{m} C_m(A).
 \end{aligned}
 \end{equation}
-Thus $\lambda = 0$ uses the average estimated cost and $\lambda = 1$ uses only the worst profile.
-The average and the maximum are computed with exact rational arithmetic.
-A candidate assignment $A'$ is accepted only when
+A candidate $A'$ is accepted only when
 \begin{equation}
 \label{eq:accept}
 \Phi_\lambda(A') < \Phi_\lambda(A)
 \end{equation}
-holds on those rationals.
-A floating-point rendering of the potential is for display and is not the comparison.
-
-Feasibility does not depend on $\Phi_\lambda$.
-Spill is always feasible.
-A physical register $p$ is feasible for range $r$ when no interfering neighbor already holds $p$:
+on those rationals.
+A physical register $p$ is feasible for range $r$ when no interfering neighbor already holds it:
 \begin{equation}
 \label{eq:feasible}
-\begin{aligned}
-&\mathrm{feasible}(r,p,A) \\
-&\quad\equiv \forall n \text{ adjacent to } r,\; A(n) \neq p.
-\end{aligned}
+\mathrm{feasible}(r,p,A) \equiv \forall n \text{ adjacent to } r,\; A(n) \neq p.
 \end{equation}
-Interference itself is existential over instruction boundaries.
-If $L_{\mathrm{in}}(s)$ and $L_{\mathrm{out}}(s)$ denote the may-live sets at the boundaries of instruction site $s$, an undirected edge exists when
+An undirected edge exists when some instruction boundary holds both ranges:
 \begin{equation}
 \label{eq:edge}
 \exists s \text{ such that } \{r,q\} \subseteq L_{\mathrm{in}}(s) \cup L_{\mathrm{out}}(s).
 \end{equation}
-Equation~\eqref{eq:edge} is the implemented intent: a pair that is simultaneously live at a boundary interferes.
-It is may-liveness, so an edge can exist for a pair that no single concrete execution holds at once.
-
-If $w_L = w_S = 0$, every estimate is zero.
-The potential then never strictly falls, so the search accepts no move from an all-spilled start.
-Greedy packing can still assign registers, because it does not test $\Phi_\lambda$.
-That case is covered by a unit test and is not used in the tables of Section~\ref{sec:results}.
+Equation~\eqref{eq:edge} uses may-liveness, so an edge can exist for a pair that no single concrete path holds at once.
+If $w_L = w_S = 0$, every estimate is zero, the potential never strictly falls, and the search accepts no move from an all-spilled start.
+Greedy packing can still assign registers.
+That case is a unit test and is not in the tables below.
 
 \subsection{Algorithms}
 \label{sec:algorithms}
 Algorithm~\ref{alg:greedy} is the shared packing procedure.
-Static greedy sets the weight to \eqref{eq:static}.
-Profile-weighted greedy sets it to \eqref{eq:weight}.
-Both then choose the lowest-numbered free physical register among neighbors that have already been assigned.
-Ranges later in the order are not yet occupying a register.
-The pass does not revisit an earlier spill if a later decision would have freed a register.
-The reported potential, when profiles exist, is computed after packing so that the three results can be compared.
-Static greedy does not optimize that potential, and profile-weighted greedy does not claim to minimize it either.
+It does not revisit an earlier spill if a later decision would have freed a register.
+The reported potential, when profiles exist, is computed after packing.
+Neither greedy variant claims to minimize that potential.
 
 \begin{algorithm}[t]
 \caption{One-pass greedy packing}
@@ -552,7 +513,7 @@ Static greedy does not optimize that potential, and profile-weighted greedy does
 \STATE $P \leftarrow (\mathrm{p}_0,\ldots,\mathrm{p}_{k-1})$
 \STATE order $R$ by decreasing $w(r)$, then by range identifier
 \FOR{each $r$ in that order}
-\STATE $O \leftarrow$ physical registers held by neighbors of $r$ that are already assigned
+\STATE $O \leftarrow$ physical registers held by already assigned neighbors of $r$
 \IF{some register in $P$ is absent from $O$}
 \STATE $A(r) \leftarrow$ the lowest such register
 \ELSE
@@ -563,11 +524,11 @@ Static greedy does not optimize that potential, and profile-weighted greedy does
 \end{algorithmic}
 \end{algorithm}
 
-Algorithm~\ref{alg:game} is best-improvement search over the neighborhood defined by \eqref{eq:feasible}.
-The default initial assignment spills every range, because a cost that depends only on the spill set has no improving one-register move once a maximal greedy packing has filled every feasible register.
-Starting from greedy can therefore stop immediately even when a two-range exchange would reduce $\Phi_\lambda$.
-A unit test locks that behavior for the tradeoff program at $\lambda = 1$ when the search starts from profile-weighted greedy: the search keeps \texttt{a} and spills \texttt{b}, which is not the spill set chosen from the all-spilled start.
-The iteration count is the number of accepted moves.
+Algorithm~\ref{alg:game} searches the neighborhood in \eqref{eq:feasible}.
+A cost that depends only on the spill set has no improving one-register move once a maximal greedy packing has filled every feasible register.
+Starting from greedy can therefore stop immediately.
+A unit test locks that behavior for the tradeoff program at $\lambda = 1$ when the search starts from profile-weighted greedy: it keeps \texttt{a} and spills \texttt{b}.
+The dashboard does not use that start.
 Budget exhaustion is not described as optimality.
 
 \begin{algorithm}[t]
@@ -606,58 +567,74 @@ Budget exhaustion is not described as optimality.
 \end{algorithmic}
 \end{algorithm}
 
-The two algorithms, the eight equations, and Figures~\ref{fig:architecture}--\ref{fig:game} are the methodology.
-They are descriptive of the source.
-They are not an approximation theorem, a convergence rate, or a claim that the potential search dominates greedy packing on programs outside the tested set.
+Table~\ref{tab:suite} records the eight built-in programs.
+An empty benchmark request uses those values.
+The robustness slider does not replace them.
+
+\begin{table}[t]
+\caption{Built-in programs. Counts are the values stored with each case.}
+\label{tab:suite}
+\centering
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Case & $k$ & $\lambda$ & Budget \\
+\midrule
+sequential reuse & 1 & $1/2$ & 10 \\
+diamond & 1 & $1/2$ & 20 \\
+loop & 1 & $1/2$ & 20 \\
+profile vs.\ static & 1 & $0$ & 10 \\
+game average & 1 & $0$ & 10 \\
+game worst & 1 & $1$ & 10 \\
+zero registers & 0 & $1/2$ & 5 \\
+insufficient & 1 & $1/2$ & 20 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The profile-versus-static program puts three updates of \texttt{a} in a block counted once and one update of \texttt{b} in a block counted 100 times, then returns \texttt{a}.
+The two game cases are the tradeoff program, one at $\lambda = 0$ and one at $\lambda = 1$.
+The profile skew counts blocks \texttt{def\_a}, \texttt{def\_b}, \texttt{use\_a}, \texttt{use\_b}, and \texttt{exit} as 2, 9, 3, 10, and 2.
+The profile quiet\_b uses 2, 0, 3, 0, and 2.
+The equations, the two algorithms, and Figures~\ref{fig:architecture}--\ref{fig:game} describe the source.
+They are not an approximation theorem.
 
 \section{Implementation and Result Analysis}
 \label{sec:results}
 
 \subsection{Tools and Setup}
 \label{sec:setup}
-The analyzer is a Python package, version 0.1.0, checked with the interpreter that produced the result file accompanying this draft, Python 3.12.3 \cite{python}.
+The analyzer is Python package version 0.1.0, checked with Python 3.12.3 \cite{python}.
 HTTP models use Pydantic and FastAPI \cite{pydantic,fastapi}.
 Tests use pytest.
-The dashboard is a TypeScript React application built with Vite \cite{react,vite}.
-No application binary was timed on a named CPU for this paper, and no CPU model is reported, because a controlled timing study was not run.
-The service records \texttt{execution\_time\_ms} for each allocator call.
-The unit test for the benchmark endpoint checks that this field is nonnegative.
-That check is not a performance result.
-
-The commands used to exercise the library are those in the project instructions.
 From the \texttt{backend} directory, create a virtual environment, install \texttt{requirements.txt}, and run \texttt{python -m pytest}.
 The service is started with
 \begin{quote}
 \texttt{python -m uvicorn pgara.api:app}\\
 \texttt{--host 127.0.0.1 --port 8741}
 \end{quote}
-The numbers in Section~\ref{sec:observed} were obtained by calling the same \texttt{analyze} function the service calls.
-Load cost and store cost were 1.
-The potential search started from the all-spilled assignment.
-The estimates are stored beside this manuscript in \texttt{verified-\allowbreak results.json}.
-Re-running that call on version 0.1.0 reproduces the estimates.
-It will not reproduce wall-clock time, which was deliberately not saved as a result.
+The numbers in Section~\ref{sec:observed} come from the same \texttt{analyze} function the service calls, with load cost and store cost equal to 1 and the search started from all spilled.
+They are stored in \texttt{verified-\allowbreak results.json}.
+Wall-clock time was not saved.
 
-The dashboard sample program has blocks \texttt{B0}, \texttt{B2}, \texttt{B1}, and \texttt{B3} in that source order, so the false edge of the branch in \texttt{B0} enters \texttt{B2}.
-Its three profiles, in source order, are Hot loop (1000, 150, 850, 1000), Balanced (1000, 500, 500, 1000), and Cold-heavy (1000, 800, 200, 1000).
-The allocation tradeoff used for that program in the tables is $3/5$, the rational image of the dashboard's default robustness $0.6$.
-The built-in suite does not use that tradeoff.
-Each case uses the fraction stored in the suite.
-
-No genuine project screenshot is present in the repository.
-None is inserted.
-A screenshot of the zero-cost annotation would illustrate the interface only; it would not add an allocation measurement.
+The workspace is a TypeScript React application built with Vite \cite{react,vite}.
+Routing uses TanStack Router.
+From the repository root, install dependencies and start the Vite development server.
+Open the printed URL.
+In Connection settings, choose the FastAPI backend, check health, and apply.
+Then run an experiment.
+Applying the connection does not allocate.
+No controlled timing study was run, and no CPU model is reported.
+The field \texttt{execution\_time\_ms} is checked only as a nonnegative value in a unit test.
+That check is not a performance result.
+No interface capture is inserted, because this draft does not include a screenshot taken from a running session.
 
 \subsection{Parameter Setup}
 \label{sec:parameters}
-Table~\ref{tab:params} lists the parameters that affect the reported estimates and the values used for the two result groups.
-The table is a record of the run, not a tuned optimum.
+Table~\ref{tab:params} records the runs.
 Load and store weights stay at the defaults because the dashboard does not expose them.
-Changing either weight scales \eqref{eq:profile} and can change greedy order.
-That sensitivity was not swept.
 
 \begin{table}[t]
-\caption{Parameters of the reported runs. Estimated spill operations use dimensionless counts.}
+\caption{Parameters of the reported runs. Spill figures are dimensionless counts.}
 \label{tab:params}
 \centering
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.30\columnwidth}>{\raggedright\arraybackslash}p{0.30\columnwidth}>{\raggedright\arraybackslash}p{0.28\columnwidth}@{}}
@@ -676,63 +653,48 @@ Profiles & Three supplied maps & The case maps \\
 
 \subsection{Metrics}
 \label{sec:metrics}
-Five quantities are supported by the implementation and by the runs above.
+Five quantities are supported.
 They are defined in Table~\ref{tab:metrics}.
 Estimated spill operations are plotted in Fig.~\ref{fig:results} and listed in Tables~\ref{tab:dashboard}, \ref{tab:agree}, and \ref{tab:cases}.
 Static spill operations and spilled-range identifiers are columns of those tables.
-Validity and spill-set agreement are recorded in the same tables: every tabulated assignment passed the interference check, and agreement is whether a row names one spill set or three.
-Separate plots of those two checks would repeat a pass-or-fail observation.
-They are not drawn.
-Estimated spill operations are \eqref{eq:alloc} summed across profiles, which is what the dashboard calls dynamic spill operations when profile rows exist.
-Static spill operations are \eqref{eq:static} summed over spilled ranges.
-Spilled-range count is the size of the spill set.
-Validity is the post-check that no interfering pair shares a physical register; every result used here passed that check.
-Agreement records whether the three algorithms returned the same spill set.
-Agreement is an observation about these inputs.
-It is not a theorem that the algorithms always agree.
-
-Allocator time is available and is intentionally not a sixth reported metric.
-One call's milliseconds depend on the host, the interpreter, and other load.
-No repetition, warmup, or interval was collected.
-A speedup against LLVM or GCC was not measured and is not stated.
+Validity is the interference check after assignment.
+Spill-set agreement records whether the three algorithms returned the same spill set.
+Separate plots of those two checks would repeat a pass-or-fail observation, so they are not drawn.
+The dashboard's allocator-time tile is not a sixth metric.
 
 \begin{table}[t]
-\caption{Metrics that the reported runs support. Units are counts unless noted.}
+\caption{Metrics the reported runs support. Units are counts unless noted.}
 \label{tab:metrics}
 \centering
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.34\columnwidth}>{\raggedright\arraybackslash}p{0.58\columnwidth}@{}}
 \toprule
 Metric & What was computed \\
 \midrule
-Estimated spill operations & Sum of \eqref{eq:alloc} over the supplied profiles. Not seconds. \\
+Estimated spill operations & Sum of \eqref{eq:alloc} over profiles. Not seconds. \\
 Static spill operations & Sum of \eqref{eq:static} over spilled ranges. \\
 Spilled live ranges & Identifiers with $A(r)=\mathrm{spill}$. \\
-Validity & Interference check after assignment. All tabulated runs passed. \\
-Spill-set agreement & Whether the three spill sets were equal on that input. \\
+Validity & Interference check. All tabulated runs passed. \\
+Spill-set agreement & Whether the three spill sets were equal. \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \subsection{Observed Results}
 \label{sec:observed}
-Table~\ref{tab:dashboard} is the dashboard sample.
+Table~\ref{tab:dashboard} is the dashboard sample program at $\lambda = 3/5$.
+Source order is block B0, then B2, then B1, then B3.
+The false edge from B0 therefore enters B2.
+The profiles Hot loop, Balanced, and Cold-heavy are $(1000,150,850,1000)$, $(1000,500,500,1000)$, and $(1000,800,200,1000)$ in that block order.
 At $k = 2$ every algorithm spills \texttt{c}, \texttt{d}, \texttt{t2}, and \texttt{t4}.
-The per-profile estimates are 5850, 5500, and 5200 for Hot loop, Balanced, and Cold-heavy, so the sum is 16550.
-The static spill operation count of that spill set is 7.
-Six of the ten live ranges are assigned.
-At $k = 3$ every algorithm spills only \texttt{d}.
-Each profile contributes 1000, the sum is 3000, and the static count is 1.
-Nine ranges are assigned.
-At $k = 4$, $k = 5$, and $k = 6$ every spill set is empty, every per-profile estimate is 0, and the static count is 0.
-All ten ranges are assigned.
-The three sums match because the spill sets match, not because the chart copied one algorithm's row.
-At $k = 6$ the assignments are not identical: static greedy places \texttt{t1} on $\mathrm{p}_0$, \texttt{t3} on $\mathrm{p}_1$, and \texttt{t5} on $\mathrm{p}_0$, while the other two algorithms place \texttt{t1} on $\mathrm{p}_1$, \texttt{t3} on $\mathrm{p}_0$, and \texttt{t5} on $\mathrm{p}_1$.
+The per-profile estimates are 5850, 5500, and 5200, so the sum is 16550 and the static count is 7.
+At $k = 3$ every algorithm spills only \texttt{d}, each profile contributes 1000, and the static count is 1.
+At $k = 4$, $k = 5$, and $k = 6$ every spill set is empty and every estimate is 0.
+At $k = 6$ the assignments still differ: static greedy places \texttt{t1} on $\mathrm{p}_0$, \texttt{t3} on $\mathrm{p}_1$, and \texttt{t5} on $\mathrm{p}_0$, while the other two algorithms swap those three registers.
 Equation~\eqref{eq:alloc} does not see that difference.
-The assignment footer ``10 assigned, 0 spilled, 0 estimated spill operations'' is the potential-game row of this response.
-It is the same fact as the three zeros in the comparison chart.
+The three zeros on the comparison chart are three returned sums.
 
 \begin{table}[t]
-\caption{Dashboard sample at $\lambda = 3/5$. All three algorithms share each row's spill set, sum, and static count.}
+\caption{Dashboard sample at $\lambda = 3/5$. All three algorithms share each row.}
 \label{tab:dashboard}
 \centering
 \begin{tabular}{@{}rrrl@{}}
@@ -748,20 +710,12 @@ $k$ & Sum & Static & Spilled ranges \\
 \end{tabular}
 \end{table}
 
-The built-in suite has eight cases.
-Five of them do not separate the algorithms under the case tradeoff.
-Table~\ref{tab:agree} lists those five.
-Sequential reuse spills nothing with one register.
-The diamond spills \texttt{b}.
-The loop spills \texttt{s}, with estimated sum 40 and static count 4, because the profile multiplies a smaller set of sites.
-Zero registers spills \texttt{a}, \texttt{b}, and \texttt{c}.
-The insufficient-register clique spills \texttt{b}, \texttt{c}, \texttt{d}, and \texttt{f}.
-Every row passed the interference check, and the three spill sets match.
-Those rows are validity and cost checks.
-They are not evidence that the potential search improves on greedy packing.
+Five built-in cases do not separate the algorithms.
+Table~\ref{tab:agree} lists them.
+They are validity and cost checks, not evidence that the search improves on greedy packing.
 
 \begin{table}[t]
-\caption{Built-in cases with one shared spill set. Sum and static are estimated spill operations.}
+\caption{Built-in cases with one shared spill set.}
 \label{tab:agree}
 \centering
 \begin{tabular}{@{}lrrl@{}}
@@ -779,25 +733,23 @@ insufficient & 8 & 8 & \texttt{b}, \texttt{c}, \texttt{d}, \texttt{f} \\
 
 Three cases do separate a decision.
 They are plotted in Fig.~\ref{fig:results} and listed in Table~\ref{tab:cases}.
-For the profile-versus-static case, at $\lambda = 0$ and $k = 1$, static greedy spills \texttt{b} and the estimated sum is 101.
+For profile versus static, at $\lambda = 0$ and $k = 1$, static greedy spills \texttt{b} and the sum is 101.
 Profile-weighted greedy and the potential search spill \texttt{a} and the sum is 8.
-The static site count prefers \texttt{a}; the supplied hot-block counts prefer \texttt{b}.
-For \texttt{game\_average}, at $\lambda = 0$, all three spill \texttt{b} and the sum is 19.
-The potential search keeps \texttt{a}.
-For \texttt{game\_worst}, at $\lambda = 1$, static and profile-weighted greedy still spill \texttt{b} with sum 19.
-The potential search spills \texttt{a} and the sum is 20.
-The worst profile falls even though the sum across profiles rises.
+For game average, at $\lambda = 0$, all three spill \texttt{b} and the sum is 19.
+The search keeps \texttt{a} on $\mathrm{p}_0$.
+For game worst, at $\lambda = 1$, static and profile-weighted greedy still spill \texttt{b} with sum 19.
+The search spills \texttt{a} and the sum is 20.
+The worst profile falls while the summed estimate rises.
 That is what \eqref{eq:potential} specifies at $\lambda = 1$.
-It is not a general win for the search: the summed estimate is higher than the greedy estimate.
-A unit test locks the kept registers: at $\lambda = 0$ the search assigns $\mathrm{p}_0$ to \texttt{a}, and at $\lambda = 1$ it assigns $\mathrm{p}_0$ to \texttt{b}.
+It is not a general win for the search.
 
 \begin{table}[t]
-\caption{Cases in which the spill decision is not identical. Sums are estimated spill operations.}
+\caption{Cases in which the spill decision is not identical.}
 \label{tab:cases}
 \centering
-\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.22\columnwidth}rrp{0.38\columnwidth}@{}}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.24\columnwidth}rrp{0.36\columnwidth}@{}}
 \toprule
-Case & $\lambda$ & Sum & Spill set by algorithm \\
+Case & $\lambda$ & Sum & Spill set \\
 \midrule
 profile vs.\ static & 0 & 101 & static: \texttt{b} \\
  &  & 8 & profile and game: \texttt{a} \\
@@ -808,84 +760,61 @@ game worst & 1 & 19 & static and profile: \texttt{b} \\
 \end{tabular}
 \end{table}
 
-\Figure[t!][width=\columnwidth]{fig-results.pdf}{Left: estimated spill operations on the three cases that separate a decision, each at its own tradeoff. Right: the dashboard sample, where all three algorithms share the plotted sum.\label{fig:results}}
+\Figure[t!][width=\columnwidth]{fig-results.pdf}{Left: estimated spill operations on the three separating cases. Right: the dashboard sample, where all three algorithms share each sum.\label{fig:results}}
 
-The illustrative dashboard fixture is a different object.
-In sample mode the displayed spill operations stay at 4200, 1800, and 1200 regardless of the program text.
-Those numbers are labeled as a fixture in the interface and in the tests.
-They are not in Table~\ref{tab:dashboard} and they are not measurements.
-
+In sample mode the displayed spill operations stay at 4200, 1800, and 1200 regardless of the editor.
+Those numbers are a fixture.
+They are not in Table~\ref{tab:dashboard}.
 The zero-cost chart annotation and the empty benchmark request are implementation corrections.
-The annotation explains a returned zero.
-The empty request stops the dashboard from replacing each case tradeoff with the robustness slider.
-Neither change creates a new allocation result.
-Before that request correction, a slider value of 0.6 would have run both \texttt{game\_average} and \texttt{game\_worst} at $\lambda = 3/5$, and the potential search spilled \texttt{a} in both.
-The tables in this section use each case's own tradeoff.
+They do not create a new allocation result.
+Before the empty-body correction, a slider value of 0.6 would have run both game cases at $\lambda = 3/5$, and the search spilled \texttt{a} with sum 20 in both.
+The tables use each case's own tradeoff.
 
 \subsection{What Is Not Compared}
 \label{sec:notcompared}
-No paper in Section~\ref{sec:related} reports estimated spill operations on this intermediate representation, with these profiles, under \eqref{eq:potential}.
-Burroughs reports dynamic store and load counts against LLVM \cite{burroughs2016}.
+No paper in Section~\ref{sec:related} reports this estimate on this intermediate representation.
+Burroughs reports dynamic loads and stores against LLVM \cite{burroughs2016}.
 Pereira and Palsberg report compile time and code quality on SPEC \cite{pereira2008}.
 The RL4ReAl preprint reports LLVM comparisons on x86 and AArch64 \cite{venkatakeerthy2022}.
-Those setups are not the same experiment.
-This paper therefore makes no quantitative comparison and no significance claim.
-A qualitative difference is stated instead.
-Those systems emit or evaluate machine code, and several of them split or coalesce ranges.
-PGARA returns a validated assignment and an estimate derived from supplied counts.
-
-The missing experiments are listed in the checklist shipped with this draft.
-The important ones are repeated here so the results section does not read as a complete evaluation.
-There is no application suite, no comparison against LLVM or GCC, no repeated timing protocol, no sweep of $w_L$, $w_S$, and budgets, and no measurement of code size after spill insertion, because spill code is not inserted.
-There is no evidence in this repository that the potential search reduces estimated cost on a broad sample of programs.
-On the programs that were run, it matches greedy except in the $\lambda = 1$ tradeoff case, where its summed estimate is 20 rather than 19.
+Those setups are not this experiment, so no quantitative comparison and no significance claim is made.
+There is no application suite, no LLVM or GCC comparison, no repeated timing protocol, and no sweep of weights or budgets.
+On the programs that were run, the search matches greedy except at $\lambda = 1$, where its summed estimate is 20 rather than 19.
 
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
-Register allocation is still the problem of keeping simultaneously live values in a finite file and accounting for the rest.
-Existing coloring, linear-scan, puzzle, profile-distance, evolutionary, and learned allocators address that problem inside much larger compilers, with metrics that this repository does not compute.
-PGARA implements a smaller contract.
-It checks a three-address program and explicit profiles, builds may-liveness and an interference graph, and estimates spill operations from load and store sites.
-Static greedy orders ranges by site counts.
-Profile-weighted greedy orders them by the sum of profile estimates.
-The potential search moves one range at a time when the average-to-worst tradeoff strictly falls.
-The FastAPI service and the React dashboard report those assignments without replacing a failed call by the illustrative fixture.
+PGARA keeps simultaneously live values in a finite file and estimates the rest from supplied block counts.
+Coloring, linear scan, puzzle solving, profile distance, evolutionary search, and learned allocators address that problem inside larger compilers, with metrics this repository does not compute.
+The prototype checks a three-address program, builds may-liveness and an interference graph, and packs ranges by a static count, a profile-weighted count, or a one-range potential search.
+FastAPI serves those results, and the React workspace draws them without replacing a failed call by the sample fixture.
 
 The verified results are estimates on synthetic programs.
-On the dashboard sample, all three algorithms spill four ranges at two registers (sum 16550), one range at three registers (sum 3000), and no ranges at four, five, or six registers.
-On the built-in suite, profile weighting reduces the estimate from 101 to 8 in the hot-block case by spilling a different range, and the potential search at $\lambda = 1$ chooses the range that improves the worst profile while increasing the summed estimate from 19 to 20.
+On the dashboard sample, all three algorithms spill four ranges at two registers (sum 16550), one range at three registers (sum 3000), and none at four, five, or six registers.
+Profile weighting changes one built-in spill set from estimated cost 101 to 8.
+The potential search at $\lambda = 1$ improves the worst profile and raises the summed estimate from 19 to 20.
 Every tabulated assignment passed the interference check.
 None of these statements is a measured speedup.
 
-The limits are part of the result.
-The search is local.
-Identical spill sets hide different register assignments.
-May-liveness is not path-sensitive.
-Ranges are not split, copies are not coalesced, and the intermediate representation is not rewritten into spill code.
+The search is local, may-liveness is not path-sensitive, and ranges are not split or coalesced.
+Spill code is not inserted, so emitted loads are not counted.
 Profiles are trusted as given.
-Allocator time is recorded and was not evaluated as a performance metric.
-
-Realistic next work stays inside those gaps.
+Allocator time is recorded in the interface and was not evaluated as a performance metric.
 
 A repeated timing protocol on a stated machine would make the recorded allocator time meaningful.
-That field is \texttt{execution\_time\_ms}.
-A spill-code rewrite would allow a comparison of emitted loads and stores.
-Burroughs measured that quantity.
-PGARA does not emit those instructions.
-Live-range splitting would use the identifier field the data structures already keep.
-A study on programs other than the eight synthetic cases would show whether the $\lambda = 1$ choice is common or an example.
-Until those measurements exist, the supported claim is narrow: given this cost model and these inputs, the three procedures return the assignments and estimates reported above.
+A spill-code rewrite would allow a comparison of emitted loads and stores, which is the quantity Burroughs measured.
+Live-range splitting would use the identifier the data structures already keep.
+A study beyond the eight synthetic cases would show whether the $\lambda = 1$ choice is common.
+Until those measurements exist, the supported claim is the assignments and estimates reported above.
 
 \section*{Author Contributions}
 Not supplied.
-The author list, the contribution of each person, and whether a contributor meets the journal's authorship criteria must be added before submission.
-Contributors who do not meet that criteria belong in the acknowledgment, not in the byline.
+The author list and the contribution of each person must be added before submission.
+Contributors who do not meet the journal's authorship criteria belong in the acknowledgment.
 
 \section*{Acknowledgment}
 Personal acknowledgments were not supplied.
 IEEE Access requires disclosure of generative artificial-intelligence assistance.
 This draft was prepared from the project repository with the assistance of a coding agent.
-The human authors must review every citation, number, and sentence and must replace this paragraph with the disclosure they approve before submission.
+The human authors must review every citation, number, and sentence and replace this paragraph with the disclosure they approve.
 
 \section*{Funding}
 Funding information was not supplied.
@@ -896,10 +825,10 @@ Competing interests were not supplied.
 No conflict is asserted or denied on behalf of an unnamed author.
 
 \section*{Data and Code Availability}
-The analyzer, the tests, the dashboard, and \texttt{verified-\allowbreak results.json} are part of the project that contains this manuscript.
-Section~\ref{sec:results} uses that result file.
+The analyzer, the tests, and the React workspace are in the project that contains this manuscript.
+Section~\ref{sec:results} uses \texttt{verified-\allowbreak results.json}.
 The estimates can be recomputed from analyzer version 0.1.0 by the procedure in Section~\ref{sec:setup}.
-A public archive, a DOI for the code, and a data-availability statement approved by the authors were not supplied.
+A public archive and a DOI were not supplied.
 No external benchmark suite was downloaded for this draft.
 
 \bibliographystyle{IEEEtran}

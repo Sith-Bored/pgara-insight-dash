@@ -8,7 +8,7 @@ This checklist records what the compiled draft actually supports, where `Paper-T
 
 IEEE Access rules were kept where the brief conflicts with them:
 
-- The abstract is one paragraph of 225 words. The journal asks for 150–250 words. The brief asked for a longer line-by-line abstract (about three lines per topic). Those topics are expanded in the introduction.
+- The abstract is one paragraph of 210 words. The journal asks for 150–250 words. The brief asked for a longer line-by-line abstract. Those topics are expanded in the introduction. The current draft is a fresh article that includes the React workspace as part of the system.
 - Citations are IEEE numbered entries via `IEEEtran`. The brief's examples use author-year form (Filippini and Hunt, 2011, and similar). That form is not used.
 - The brief asked for about 30 references, all dated 2018–2024, split as 10 from the introduction, 15 from related work, 2 tool sources, and 2–3 comparison papers. This bibliography has 26 entries. Nine are scholarly or preprint works from 2022–2025. The rest are foundational register-allocation and potential-game papers from before 2018, or tool and author-instruction pages accessed 13 October 2026. Unrelated hits (including oil-spill papers) were not added to reach 30.
 - The introduction cites the recent works that could be verified. It does not contain 15 papers from the last five years, because that many relevant records with usable abstracts were not verified.
@@ -70,7 +70,7 @@ Not measured, so not reported as performance:
 - Sweeps of load weight, store weight, iteration budget, or the game's starting assignment.
 - Live-range splitting, coalescing, or a path-sensitive liveness analysis. None of these is implemented.
 - Evidence that the potential search lowers estimated cost on a broad program set. On the programs that were run, it matches greedy except `game_worst`, where the summed estimate rises from 19 to 20 while the worst profile falls.
-- A screenshot. The repository had no project image, so none was inserted. The brief asked for one implementation screenshot.
+- A screenshot. No image was captured from a running dashboard session, so none was inserted. The brief asked for one implementation screenshot. Figure 2 is a module diagram, not a screen capture.
 
 ## Proposed experiments
 
@@ -92,7 +92,7 @@ Not measured, so not reported as performance:
 - The assigned DOI, volume, and year. The PDF currently prints `Not assigned` and volume `--`, year `--`.
 - Confirmation that every citation and number was read against the source, not only against the abstracts used here.
 
-Section III, Proposed Work, occupies pages 4--7 of the compiled 11-page draft. That is four two-column pages of formulation, architecture, modules, flow, the built-in programs, liveness, equations, and algorithms.
+Section III, Proposed Work, occupies pages 3--6 of the compiled 10-page draft, and Section IV starts on page 7. That span covers formulation, architecture, the dashboard, the client request, flow, liveness, equations, and algorithms.
 
 ## Compilation note
 
