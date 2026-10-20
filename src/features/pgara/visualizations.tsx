@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, LabelList } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, LabelList, Cell } from 'recharts';
 import { ChartNoAxesColumnIncreasing, Network, ListTree, Table2, Check, Loader2, FlaskConical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { algorithms, type AlgorithmId, type AlgorithmResult } from './types';
@@ -21,9 +21,14 @@ export function spillChartScale(values: number[]) {
 function spillLabel(value: unknown) {
   return typeof value === 'number' ? value.toLocaleString() : '';
 }
+/** Keep a 0–1 all-zero axis from labeling 0.25, 0.5, … as “0”. */
+export function spillAxisTick(value: number, allZero: boolean) {
+  if (allZero) return value === 0 ? '0' : '';
+  return value >= 1000 ? `${value / 1000}k` : String(value);
+}
 export function ComparisonChart({byProfile=false}:{byProfile?:boolean}) {
   const s=useExperiment();
-  const rows=s.result?.results.flatMap(r=>{const algorithm=toUiAlgorithm(r.algorithm); return algorithm?[{name:algorithms.find(a=>a.id===algorithm)?.short ?? algorithm,spillOps:r.dynamicSpillOps,algorithm}]:[];})??[];
+  const rows=s.result?.results.flatMap(r=>{const algorithm=toUiAlgorithm(r.algorithm); if(!algorithm) return []; const meta=algorithms.find(a=>a.id===algorithm); return [{name:meta?.short ?? algorithm,spillOps:r.dynamicSpillOps,algorithm,color:meta?.color ?? 'static'}];})??[];
   const profiles=s.result?.results[0]?.profileCosts.map((p,i)=>({name:p.profile,...Object.fromEntries((s.result?.results??[]).flatMap(r=>{const algorithm=toUiAlgorithm(r.algorithm); return algorithm?[[algorithm,r.profileCosts[i]?.spillOps??0]]:[]}))}))??[];
   const shown=algorithms.filter(a=>s.result?.results.some(r=>toUiAlgorithm(r.algorithm)===a.id));
   const values=byProfile
@@ -31,7 +36,7 @@ export function ComparisonChart({byProfile=false}:{byProfile?:boolean}) {
     : rows.map(row=>row.spillOps);
   const scale=spillChartScale(values);
   return <Panel title={byProfile?'Profile-by-profile spill cost':'Algorithm comparison'} icon={<ChartNoAxesColumnIncreasing/>} action={<span className="badge">Dynamic spill operations</span>}>
-    {s.result?<><div className="panel-body"><div className="comparison-legend mb-4">{shown.map(a=>{const cost=rows.find(row=>row.algorithm===a.id)?.spillOps; return <span key={a.id}><i className={`algo-dot ${a.color}`}/>{a.short}{!byProfile && cost!==undefined && <span className="font-mono">{cost.toLocaleString()}</span>}</span>;})}</div><div className="chart">{scale.allZero && <p className="chart-zero-note" role="status">No estimated spills for this configuration.</p>}<ResponsiveContainer width="100%" height="100%"><BarChart data={byProfile?profiles:rows} margin={{top:16,right:8,left:-14,bottom:0}} barCategoryGap={byProfile?'25%':'28%'}><CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 4"/><XAxis dataKey="name" axisLine={false} tickLine={false} tickMargin={12}/><YAxis axisLine={false} tickLine={false} domain={scale.domain} {...(scale.ticks ? { ticks: scale.ticks } : {})} allowDecimals={false} tickFormatter={v=>v>=1000?`${v/1000}k`:String(v)}/><Tooltip cursor={{fill:'var(--muted)'}} content={<ChartTooltip/>}/>{byProfile?shown.map(a=><Bar key={a.id} dataKey={a.id} name={a.short} fill={`var(--${a.color})`} radius={[3,3,0,0]}><LabelList position="top" formatter={spillLabel}/></Bar>):shown.map(a=><Bar key={a.id} dataKey={row=>row.algorithm===a.id?row.spillOps:null} name={a.short} fill={`var(--${a.color})`} radius={[3,3,0,0]} stackId="algorithms"><LabelList position="top" formatter={spillLabel}/></Bar>)}</BarChart></ResponsiveContainer></div></div><div className="chart-foot"><span>{s.result.source==='sample'?'Illustrative fixture · k = 4 · λ = 0.60':'Sum of estimated spill operations across the supplied profiles'}{scale.allZero && s.result.source==='backend'?' · returned zeros, not missing data':''}</span><span>{s.result.source==='sample'?'Not a measured benchmark':'Not measured runtime'}</span></div></>:<ResultEmpty/>}
+    {s.result?<><div className="panel-body"><div className="comparison-legend mb-4">{shown.map(a=>{const cost=rows.find(row=>row.algorithm===a.id)?.spillOps; return <span key={a.id}><i className={`algo-dot ${a.color}`}/>{a.short}{!byProfile && cost!==undefined && <span className="font-mono">{cost.toLocaleString()}</span>}</span>;})}</div><div className="chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={byProfile?profiles:rows} margin={{top:16,right:8,left:-14,bottom:0}} barCategoryGap={byProfile?'25%':'28%'}><CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 4"/><XAxis dataKey="name" axisLine={false} tickLine={false} tickMargin={12}/><YAxis axisLine={false} tickLine={false} domain={scale.domain} {...(scale.ticks ? { ticks: scale.ticks } : {})} interval={0} allowDecimals={false} tickFormatter={v=>spillAxisTick(Number(v), scale.allZero)}/><Tooltip cursor={{fill:'var(--muted)'}} content={<ChartTooltip/>}/>{byProfile?shown.map(a=><Bar key={a.id} dataKey={a.id} name={a.short} fill={`var(--${a.color})`} radius={[3,3,0,0]} isAnimationActive={false}><LabelList position="top" formatter={spillLabel}/></Bar>):<Bar dataKey="spillOps" name="Estimated spill ops" radius={[3,3,0,0]} isAnimationActive={false}>{rows.map(row=><Cell key={row.algorithm} fill={`var(--${row.color})`}/>)}<LabelList dataKey="spillOps" position="top" formatter={spillLabel}/></Bar>}</BarChart></ResponsiveContainer>{scale.allZero && <p className="chart-zero-note" role="status">No estimated spills for this configuration.</p>}</div></div><div className="chart-foot"><span>{s.result.source==='sample'?'Illustrative fixture · k = 4 · λ = 0.60':'Sum of estimated spill operations across the supplied profiles'}{scale.allZero && s.result.source==='backend'?' · returned zeros, not missing data':''}</span><span>{s.result.source==='sample'?'Not a measured benchmark':'Not measured runtime'}</span></div></>:<ResultEmpty/>}
   </Panel>;
 }
 export function Assignments() {
