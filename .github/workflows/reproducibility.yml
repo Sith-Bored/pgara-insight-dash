@@ -46,7 +46,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run frontend tests
-        run: bun test
+        run: bun run test
 
       - name: Build frontend
         run: bun run build

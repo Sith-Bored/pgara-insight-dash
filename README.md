@@ -61,7 +61,7 @@ From the repository root, using Bun 1.4.4:
 
 ```bash
 bun install --frozen-lockfile
-bun test
+bun run test
 bun run build
 ```
 

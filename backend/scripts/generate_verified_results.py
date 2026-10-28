@@ -22,6 +22,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BACKEND_ROOT))
+
 from pgara import __version__
 from pgara.allocate import Allocation
 from pgara.engine import analyze
