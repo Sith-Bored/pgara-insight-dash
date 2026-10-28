@@ -1,15 +1,840 @@
 {
-  "schema_version": 1,
-  "project": "PGARA",
   "analyzer_version": "0.1.0",
-  "results_status": "generation_pending",
-  "verification_note": "The repository workflow will populate this file from the actual benchmark implementation after tests pass. Manuscript comparison is a separate manual check.",
-  "generated_from_commit": null,
-  "environment": {},
+  "environment": {
+    "dependencies": {
+      "fastapi": "0.162.0",
+      "httpx": "0.28.1",
+      "pydantic": "2.14.1",
+      "pytest": "9.2.0",
+      "uvicorn": "0.54.0"
+    },
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.43",
+    "python_implementation": "CPython",
+    "python_version": "3.12.15"
+  },
+  "experiments": [
+    {
+      "algorithms": {
+        "potential_game": {
+          "assignments": {
+            "a": "p0",
+            "b": "p0",
+            "c": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 0
+            },
+            "sum_across_profiles": 0
+          },
+          "iterations": 3,
+          "potential": {
+            "denominator": 1,
+            "numerator": 0
+          },
+          "spilled_ranges": [],
+          "static_spill_operations": 0,
+          "stopping_reason": "no_improving_move"
+        },
+        "profile_greedy": {
+          "assignments": {
+            "a": "p0",
+            "b": "p0",
+            "c": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 0
+            },
+            "sum_across_profiles": 0
+          },
+          "iterations": 3,
+          "potential": {
+            "denominator": 1,
+            "numerator": 0
+          },
+          "spilled_ranges": [],
+          "static_spill_operations": 0,
+          "stopping_reason": "single_pass"
+        },
+        "static_greedy": {
+          "assignments": {
+            "a": "p0",
+            "b": "p0",
+            "c": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 0
+            },
+            "sum_across_profiles": 0
+          },
+          "iterations": 3,
+          "potential": {
+            "denominator": 1,
+            "numerator": 0
+          },
+          "spilled_ranges": [],
+          "static_spill_operations": 0,
+          "stopping_reason": "single_pass"
+        }
+      },
+      "benchmark": "sequential_reuse",
+      "configuration": {
+        "game_initial": "all_spilled",
+        "iteration_budget": 10,
+        "load_cost": 1,
+        "profiles": [
+          {
+            "block_counts": {
+              "entry": 1
+            },
+            "name": "once"
+          }
+        ],
+        "register_count": 1,
+        "store_cost": 1,
+        "tradeoff": "1/2"
+      },
+      "description": "Three non-interfering ranges in one block. One physical register can be reused by all of them.",
+      "input": {
+        "source": "block entry:\n  a = 1\n  b = a\n  c = b\n  return c\n",
+        "source_sha256": "24256487039268fbb8f3d2db95329d97c9a3e818aaedcda1b95075f744be4425"
+      }
+    },
+    {
+      "algorithms": {
+        "potential_game": {
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 3
+            },
+            "sum_across_profiles": 3
+          },
+          "iterations": 2,
+          "potential": {
+            "denominator": 1,
+            "numerator": 3
+          },
+          "spilled_ranges": [
+            "b"
+          ],
+          "static_spill_operations": 3,
+          "stopping_reason": "no_improving_move"
+        },
+        "profile_greedy": {
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 3
+            },
+            "sum_across_profiles": 3
+          },
+          "iterations": 3,
+          "potential": {
+            "denominator": 1,
+            "numerator": 3
+          },
+          "spilled_ranges": [
+            "b"
+          ],
+          "static_spill_operations": 3,
+          "stopping_reason": "single_pass"
+        },
+        "static_greedy": {
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 3
+            },
+            "sum_across_profiles": 3
+          },
+          "iterations": 3,
+          "potential": {
+            "denominator": 1,
+            "numerator": 3
+          },
+          "spilled_ranges": [
+            "b"
+          ],
+          "static_spill_operations": 3,
+          "stopping_reason": "single_pass"
+        }
+      },
+      "benchmark": "diamond",
+      "configuration": {
+        "game_initial": "all_spilled",
+        "iteration_budget": 20,
+        "load_cost": 1,
+        "profiles": [
+          {
+            "block_counts": {
+              "entry": 1,
+              "join": 1,
+              "left": 1,
+              "right": 1
+            },
+            "name": "once"
+          }
+        ],
+        "register_count": 1,
+        "store_cost": 1,
+        "tradeoff": "1/2"
+      },
+      "description": "A conditional branch with two paths that join.",
+      "input": {
+        "source": "block entry:\n  a = 1\n  b = 2\n  if a goto left\nblock right:\n  c = b\n  goto join\nblock left:\n  c = a + b\n  goto join\nblock join:\n  return c\n",
+        "source_sha256": "f5f50f1a8c2aa9f9153d68f6a0a408cccf0eac597f78ad618a0c9c96dad43c3f"
+      }
+    },
+    {
+      "algorithms": {
+        "potential_game": {
+          "assignments": {
+            "i": "p0",
+            "s": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "ten": 40
+            },
+            "sum_across_profiles": 40
+          },
+          "iterations": 1,
+          "potential": {
+            "denominator": 1,
+            "numerator": 40
+          },
+          "spilled_ranges": [
+            "s"
+          ],
+          "static_spill_operations": 4,
+          "stopping_reason": "no_improving_move"
+        },
+        "profile_greedy": {
+          "assignments": {
+            "i": "p0",
+            "s": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "ten": 40
+            },
+            "sum_across_profiles": 40
+          },
+          "iterations": 2,
+          "potential": {
+            "denominator": 1,
+            "numerator": 40
+          },
+          "spilled_ranges": [
+            "s"
+          ],
+          "static_spill_operations": 4,
+          "stopping_reason": "single_pass"
+        },
+        "static_greedy": {
+          "assignments": {
+            "i": "p0",
+            "s": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "ten": 40
+            },
+            "sum_across_profiles": 40
+          },
+          "iterations": 2,
+          "potential": {
+            "denominator": 1,
+            "numerator": 40
+          },
+          "spilled_ranges": [
+            "s"
+          ],
+          "static_spill_operations": 4,
+          "stopping_reason": "single_pass"
+        }
+      },
+      "benchmark": "loop",
+      "configuration": {
+        "game_initial": "all_spilled",
+        "iteration_budget": 20,
+        "load_cost": 1,
+        "profiles": [
+          {
+            "block_counts": {
+              "body": 10,
+              "entry": 10,
+              "exit": 10,
+              "header": 10
+            },
+            "name": "ten"
+          }
+        ],
+        "register_count": 1,
+        "store_cost": 1,
+        "tradeoff": "1/2"
+      },
+      "description": "A loop whose header and body need iterative liveness.",
+      "input": {
+        "source": "block entry:\n  i = 0\n  s = 0\n  goto header\nblock header:\n  if i goto body\nblock exit:\n  return s\nblock body:\n  s = s + i\n  i = i + 1\n  goto header\n",
+        "source_sha256": "88827b20e6aa62295dc18565608f1653d8bd2f70d13c239fd62407761560562b"
+      }
+    },
+    {
+      "algorithms": {
+        "potential_game": {
+          "assignments": {
+            "a": null,
+            "b": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "hot_b": 8
+            },
+            "sum_across_profiles": 8
+          },
+          "iterations": 1,
+          "potential": {
+            "denominator": 1,
+            "numerator": 8
+          },
+          "spilled_ranges": [
+            "a"
+          ],
+          "static_spill_operations": 8,
+          "stopping_reason": "no_improving_move"
+        },
+        "profile_greedy": {
+          "assignments": {
+            "a": null,
+            "b": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "hot_b": 8
+            },
+            "sum_across_profiles": 8
+          },
+          "iterations": 2,
+          "potential": {
+            "denominator": 1,
+            "numerator": 8
+          },
+          "spilled_ranges": [
+            "a"
+          ],
+          "static_spill_operations": 8,
+          "stopping_reason": "single_pass"
+        },
+        "static_greedy": {
+          "assignments": {
+            "a": "p0",
+            "b": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "hot_b": 101
+            },
+            "sum_across_profiles": 101
+          },
+          "iterations": 2,
+          "potential": {
+            "denominator": 1,
+            "numerator": 101
+          },
+          "spilled_ranges": [
+            "b"
+          ],
+          "static_spill_operations": 2,
+          "stopping_reason": "single_pass"
+        }
+      },
+      "benchmark": "profile_versus_static",
+      "configuration": {
+        "game_initial": "all_spilled",
+        "iteration_budget": 10,
+        "load_cost": 1,
+        "profiles": [
+          {
+            "block_counts": {
+              "cold": 1,
+              "entry": 1,
+              "exit": 1,
+              "hot": 100
+            },
+            "name": "hot_b"
+          }
+        ],
+        "register_count": 1,
+        "store_cost": 1,
+        "tradeoff": "0"
+      },
+      "description": "One physical register. Static spill counts prefer a; the supplied hot-block counts prefer b.",
+      "input": {
+        "source": "block entry:\n  a = 0\n  b = 0\n  goto cold\nblock cold:\n  a = a + 1\n  a = a + 1\n  a = a + 1\n  goto hot\nblock hot:\n  b = b + 1\n  goto exit\nblock exit:\n  return a\n",
+        "source_sha256": "011c8d80efb242c188e76abd0cb8c995e2980e4c40bd0d33f8e33c147c3de10c"
+      }
+    },
+    {
+      "algorithms": {
+        "potential_game": {
+          "assignments": {
+            "a": "p0",
+            "b": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "quiet_b": 0,
+              "skew": 19
+            },
+            "sum_across_profiles": 19
+          },
+          "iterations": 1,
+          "potential": {
+            "denominator": 2,
+            "numerator": 19
+          },
+          "spilled_ranges": [
+            "b"
+          ],
+          "static_spill_operations": 2,
+          "stopping_reason": "no_improving_move"
+        },
+        "profile_greedy": {
+          "assignments": {
+            "a": "p0",
+            "b": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "quiet_b": 0,
+              "skew": 19
+            },
+            "sum_across_profiles": 19
+          },
+          "iterations": 2,
+          "potential": {
+            "denominator": 2,
+            "numerator": 19
+          },
+          "spilled_ranges": [
+            "b"
+          ],
+          "static_spill_operations": 2,
+          "stopping_reason": "single_pass"
+        },
+        "static_greedy": {
+          "assignments": {
+            "a": "p0",
+            "b": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "quiet_b": 0,
+              "skew": 19
+            },
+            "sum_across_profiles": 19
+          },
+          "iterations": 2,
+          "potential": {
+            "denominator": 2,
+            "numerator": 19
+          },
+          "spilled_ranges": [
+            "b"
+          ],
+          "static_spill_operations": 2,
+          "stopping_reason": "single_pass"
+        }
+      },
+      "benchmark": "game_average",
+      "configuration": {
+        "game_initial": "all_spilled",
+        "iteration_budget": 10,
+        "load_cost": 1,
+        "profiles": [
+          {
+            "block_counts": {
+              "def_a": 2,
+              "def_b": 9,
+              "exit": 2,
+              "use_a": 3,
+              "use_b": 10
+            },
+            "name": "skew"
+          },
+          {
+            "block_counts": {
+              "def_a": 2,
+              "def_b": 0,
+              "exit": 2,
+              "use_a": 3,
+              "use_b": 0
+            },
+            "name": "quiet_b"
+          }
+        ],
+        "register_count": 1,
+        "store_cost": 1,
+        "tradeoff": "0"
+      },
+      "description": "Two profiles and tradeoff 0. From all-spilled, the game's first strict improvement keeps a, the higher average-cost range.",
+      "input": {
+        "source": "block def_a:\n  a = 1\n  goto def_b\nblock def_b:\n  b = 1\n  goto use_a\nblock use_a:\n  a = a + 1\n  goto use_b\nblock use_b:\n  b = b + 1\n  goto exit\nblock exit:\n  return a\n",
+        "source_sha256": "1a71d391b3f4eb327505c9a2d834a73f804d5c874dd796249635318ab94a710d"
+      }
+    },
+    {
+      "algorithms": {
+        "potential_game": {
+          "assignments": {
+            "a": null,
+            "b": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "quiet_b": 10,
+              "skew": 10
+            },
+            "sum_across_profiles": 20
+          },
+          "iterations": 1,
+          "potential": {
+            "denominator": 1,
+            "numerator": 10
+          },
+          "spilled_ranges": [
+            "a"
+          ],
+          "static_spill_operations": 4,
+          "stopping_reason": "no_improving_move"
+        },
+        "profile_greedy": {
+          "assignments": {
+            "a": "p0",
+            "b": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "quiet_b": 0,
+              "skew": 19
+            },
+            "sum_across_profiles": 19
+          },
+          "iterations": 2,
+          "potential": {
+            "denominator": 1,
+            "numerator": 19
+          },
+          "spilled_ranges": [
+            "b"
+          ],
+          "static_spill_operations": 2,
+          "stopping_reason": "single_pass"
+        },
+        "static_greedy": {
+          "assignments": {
+            "a": "p0",
+            "b": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "quiet_b": 0,
+              "skew": 19
+            },
+            "sum_across_profiles": 19
+          },
+          "iterations": 2,
+          "potential": {
+            "denominator": 1,
+            "numerator": 19
+          },
+          "spilled_ranges": [
+            "b"
+          ],
+          "static_spill_operations": 2,
+          "stopping_reason": "single_pass"
+        }
+      },
+      "benchmark": "game_worst",
+      "configuration": {
+        "game_initial": "all_spilled",
+        "iteration_budget": 10,
+        "load_cost": 1,
+        "profiles": [
+          {
+            "block_counts": {
+              "def_a": 2,
+              "def_b": 9,
+              "exit": 2,
+              "use_a": 3,
+              "use_b": 10
+            },
+            "name": "skew"
+          },
+          {
+            "block_counts": {
+              "def_a": 2,
+              "def_b": 0,
+              "exit": 2,
+              "use_a": 3,
+              "use_b": 0
+            },
+            "name": "quiet_b"
+          }
+        ],
+        "register_count": 1,
+        "store_cost": 1,
+        "tradeoff": "1"
+      },
+      "description": "Same program as game_average with tradeoff 1. The first strict improvement keeps b, which lowers the worse profile.",
+      "input": {
+        "source": "block def_a:\n  a = 1\n  goto def_b\nblock def_b:\n  b = 1\n  goto use_a\nblock use_a:\n  a = a + 1\n  goto use_b\nblock use_b:\n  b = b + 1\n  goto exit\nblock exit:\n  return a\n",
+        "source_sha256": "1a71d391b3f4eb327505c9a2d834a73f804d5c874dd796249635318ab94a710d"
+      }
+    },
+    {
+      "algorithms": {
+        "potential_game": {
+          "assignments": {
+            "a": null,
+            "b": null,
+            "c": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 6
+            },
+            "sum_across_profiles": 6
+          },
+          "iterations": 0,
+          "potential": {
+            "denominator": 1,
+            "numerator": 6
+          },
+          "spilled_ranges": [
+            "a",
+            "b",
+            "c"
+          ],
+          "static_spill_operations": 6,
+          "stopping_reason": "no_improving_move"
+        },
+        "profile_greedy": {
+          "assignments": {
+            "a": null,
+            "b": null,
+            "c": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 6
+            },
+            "sum_across_profiles": 6
+          },
+          "iterations": 3,
+          "potential": {
+            "denominator": 1,
+            "numerator": 6
+          },
+          "spilled_ranges": [
+            "a",
+            "b",
+            "c"
+          ],
+          "static_spill_operations": 6,
+          "stopping_reason": "single_pass"
+        },
+        "static_greedy": {
+          "assignments": {
+            "a": null,
+            "b": null,
+            "c": null
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 6
+            },
+            "sum_across_profiles": 6
+          },
+          "iterations": 3,
+          "potential": {
+            "denominator": 1,
+            "numerator": 6
+          },
+          "spilled_ranges": [
+            "a",
+            "b",
+            "c"
+          ],
+          "static_spill_operations": 6,
+          "stopping_reason": "single_pass"
+        }
+      },
+      "benchmark": "zero_registers",
+      "configuration": {
+        "game_initial": "all_spilled",
+        "iteration_budget": 5,
+        "load_cost": 1,
+        "profiles": [
+          {
+            "block_counts": {
+              "entry": 1
+            },
+            "name": "once"
+          }
+        ],
+        "register_count": 0,
+        "store_cost": 1,
+        "tradeoff": "1/2"
+      },
+      "description": "num_registers is 0. The input policy spills every live range.",
+      "input": {
+        "source": "block entry:\n  a = 1\n  b = a\n  c = b\n  return c\n",
+        "source_sha256": "24256487039268fbb8f3d2db95329d97c9a3e818aaedcda1b95075f744be4425"
+      }
+    },
+    {
+      "algorithms": {
+        "potential_game": {
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": null,
+            "d": null,
+            "e": "p0",
+            "f": null,
+            "g": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 8
+            },
+            "sum_across_profiles": 8
+          },
+          "iterations": 3,
+          "potential": {
+            "denominator": 1,
+            "numerator": 8
+          },
+          "spilled_ranges": [
+            "b",
+            "c",
+            "d",
+            "f"
+          ],
+          "static_spill_operations": 8,
+          "stopping_reason": "no_improving_move"
+        },
+        "profile_greedy": {
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": null,
+            "d": null,
+            "e": "p0",
+            "f": null,
+            "g": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 8
+            },
+            "sum_across_profiles": 8
+          },
+          "iterations": 7,
+          "potential": {
+            "denominator": 1,
+            "numerator": 8
+          },
+          "spilled_ranges": [
+            "b",
+            "c",
+            "d",
+            "f"
+          ],
+          "static_spill_operations": 8,
+          "stopping_reason": "single_pass"
+        },
+        "static_greedy": {
+          "assignments": {
+            "a": "p0",
+            "b": null,
+            "c": null,
+            "d": null,
+            "e": "p0",
+            "f": null,
+            "g": "p0"
+          },
+          "estimated_spill_cost": {
+            "by_profile": {
+              "once": 8
+            },
+            "sum_across_profiles": 8
+          },
+          "iterations": 7,
+          "potential": {
+            "denominator": 1,
+            "numerator": 8
+          },
+          "spilled_ranges": [
+            "b",
+            "c",
+            "d",
+            "f"
+          ],
+          "static_spill_operations": 8,
+          "stopping_reason": "single_pass"
+        }
+      },
+      "benchmark": "insufficient_registers",
+      "configuration": {
+        "game_initial": "all_spilled",
+        "iteration_budget": 20,
+        "load_cost": 1,
+        "profiles": [
+          {
+            "block_counts": {
+              "entry": 1,
+              "use": 1
+            },
+            "name": "once"
+          }
+        ],
+        "register_count": 1,
+        "store_cost": 1,
+        "tradeoff": "1/2"
+      },
+      "description": "Four simultaneously live ranges and one physical register, so at least three of them spill.",
+      "input": {
+        "source": "block entry:\n  a = 1\n  b = 2\n  c = 3\n  d = 4\n  goto use\nblock use:\n  e = a + b\n  f = c + d\n  g = e + f\n  return g\n",
+        "source_sha256": "cc41e9f3e4f5f28c12d91f893f5232447e6b5224a82679b110b76f11f7586b81"
+      }
+    }
+  ],
+  "generated_from_commit": "8dde669f293384a3dc8d4ef87ae7801edc0f7a57",
   "generation": {
-    "entrypoint": "backend/scripts/generate_verified_results.py",
     "benchmark_source": "backend/pgara/samples.py::BENCHMARK_CASES",
+    "entrypoint": "backend/scripts/generate_verified_results.py",
     "execution_time_ms_included": false
   },
-  "experiments": []
+  "project": "PGARA",
+  "results_status": "generated_pending_manuscript_check",
+  "schema_version": 1,
+  "verification_note": "Generated from the repository implementation. Not yet compared against the manuscript's tables and figures; do not describe these results as manuscript-verified until that comparison is complete."
 }
