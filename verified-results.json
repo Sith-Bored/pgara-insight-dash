@@ -827,7 +827,7 @@
       }
     }
   ],
-  "generated_from_commit": "8dde669f293384a3dc8d4ef87ae7801edc0f7a57",
+  "generated_from_commit": "6ff203b98ff4dae872a205c0aa53ed156448e23f",
   "generation": {
     "benchmark_source": "backend/pgara/samples.py::BENCHMARK_CASES",
     "entrypoint": "backend/scripts/generate_verified_results.py",
