@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "project": "PGARA",
+  "analyzer_version": "0.1.0",
+  "results_status": "generation_pending",
+  "verification_note": "The repository workflow will populate this file from the actual benchmark implementation after tests pass. Manuscript comparison is a separate manual check.",
+  "generated_from_commit": null,
+  "environment": {},
+  "generation": {
+    "entrypoint": "backend/scripts/generate_verified_results.py",
+    "benchmark_source": "backend/pgara/samples.py::BENCHMARK_CASES",
+    "execution_time_ms_included": false
+  },
+  "experiments": []
+}
