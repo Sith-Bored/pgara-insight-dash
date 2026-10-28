@@ -9,7 +9,7 @@ globalThis.ResizeObserver = ResizeObserverStub;
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ExperimentProvider, useExperiment } from '@/features/pgara/experiment-context';
-import { spillChartScale } from '@/features/pgara/visualizations';
+import { spillAxisTick, spillChartScale } from '@/features/pgara/visualizations';
 import { ResearchPage } from '@/features/pgara/workspace';
 import type { AlgorithmId, AlgorithmResult, ExperimentResult } from '@/features/pgara/types';
 
@@ -62,15 +62,25 @@ describe('zero and mixed spill charts', () => {
   it('keeps a zero axis from collapsing without raising the bar value', () => {
     expect(spillChartScale([0, 0, 0])).toEqual({ allZero: true, domain: [0, 1], ticks: [0] });
     expect(spillChartScale([0, 3000, 16550])).toEqual({ allZero: false, domain: [0, 'dataMax'], ticks: undefined });
+    expect(spillAxisTick(0, true)).toBe('0');
+    expect(spillAxisTick(1, true)).toBe('');
+    expect(spillAxisTick(0.5, true)).toBe('');
+    expect(spillAxisTick(3000, false)).toBe('3k');
+    expect(spillAxisTick(16550, false)).toBe('16.55k');
   });
 
   it('states that an all-zero backend result has no estimated spills', async () => {
     render(<ExperimentProvider><Show result={zeroResult} /></ExperimentProvider>);
     expect(await screen.findByText('No estimated spills for this configuration.')).toBeInTheDocument();
     expect(screen.getByText('Lowest estimated spill cost').closest('.metric')).toHaveTextContent('0ops');
-    expect(screen.getAllByText('0').length).toBeGreaterThan(0);
+    const legend = document.querySelector('.comparison-legend');
+    expect(legend).toHaveTextContent('Static greedy0');
+    expect(legend).toHaveTextContent('Profile-weighted0');
+    expect(legend).toHaveTextContent('Potential game0');
     expect(screen.getByText(/0 spilled · 0 estimated spill ops/)).toBeInTheDocument();
     expect(screen.queryByText('4,200')).not.toBeInTheDocument();
+    expect(screen.queryByText('3,000')).not.toBeInTheDocument();
+    expect(screen.queryByText('16,550')).not.toBeInTheDocument();
   });
 
   it('keeps positive bars scaled to the returned costs when one algorithm is zero', async () => {
