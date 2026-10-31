@@ -836,5 +836,4 @@
   "project": "PGARA",
   "results_status": "generated",
   "schema_version": 1,
-  "verification_note": "Generated from the repository implementation. Not yet compared against the manuscript's tables and figures; do not describe these results as manuscript-verified until that comparison is complete."
 }
