@@ -4,7 +4,7 @@
     "dependencies": {
       "fastapi": "0.162.0",
       "httpx": "0.28.1",
-      "pydantic": "2.14.1",
+      "pydantic": "2.14.2",
       "pytest": "9.2.0",
       "uvicorn": "0.54.0"
     },
@@ -827,13 +827,14 @@
       }
     }
   ],
-  "generated_from_commit": "6ff203b98ff4dae872a205c0aa53ed156448e23f",
+  "generated_from_commit": "7e0e787d2d61a960db42ff29bcebc770bc0e2d7d",
   "generation": {
     "benchmark_source": "backend/pgara/samples.py::BENCHMARK_CASES",
     "entrypoint": "backend/scripts/generate_verified_results.py",
     "execution_time_ms_included": false
   },
   "project": "PGARA",
-  "results_status": "generated",
-  "schema_version": 1
+  "results_status": "generated_pending_manuscript_check",
+  "schema_version": 1,
+  "verification_note": "Generated from the repository implementation. Not yet compared against the manuscript's tables and figures; do not describe these results as manuscript-verified until that comparison is complete."
 }
